@@ -248,63 +248,82 @@ async function deepProductSearch(description) {
   ]);
 
   const fonti = [];
-  let allText = description + ' ';
+  let primaryText = description + ' ';  // testo primario (PubChem desc + sinonimi)
+  let secondaryText = '';  // testo secondario (abstract PMC — meno affidabile)
   let productInfo = null;
 
-  // Raccogli info da PubChem
+  // Raccogli info da PubChem (PRIMARIA — più affidabile per classificazione)
   if (pubchem.found) {
     fonti.push(`PubChem: ${pubchem.name}`);
-    allText += pubchem.fullText + ' ';
+    primaryText += (pubchem.descriptions || []).join(' ') + ' ' + (pubchem.synonyms || []).join(' ') + ' ';
     productInfo = { name: pubchem.name, source: 'PubChem', descriptions: pubchem.descriptions || [], synonyms: pubchem.synonyms || [] };
   }
 
-  // Raccogli info da UniProt
+  // Raccogli info da UniProt (PRIMARIA)
   if (uniprot.found) {
     fonti.push(`UniProt: ${uniprot.results[0]?.name}`);
-    allText += uniprot.fullText + ' ';
+    primaryText += uniprot.fullText + ' ';
     if (!productInfo) {
       productInfo = { name: uniprot.results[0]?.name, source: 'UniProt', descriptions: [uniprot.results[0]?.function], synonyms: uniprot.results[0]?.genes || [] };
     }
   }
 
-  // Raccogli info da Europe PMC
+  // Europe PMC (SECONDARIA — solo per fonti, non per classificazione diretta)
   if (europmc.found) {
     fonti.push(`Europe PMC: ${europmc.articles.length} pubblicazioni`);
-    allText += europmc.fullText + ' ';
+    secondaryText += europmc.fullText + ' ';
   }
 
-  // STEP 3: Classifica dal testo raccolto
-  const webClassification = classifyFromText(allText);
+  // STEP 3: Classifica SOLO dal testo primario (PubChem/UniProt — evita falsi positivi dagli abstract)
+  const primaryClassification = classifyFromText(primaryText);
 
-  // STEP 4: Riprova keyword matching con testo arricchito
-  const enrichedKeywords = smartCategoryMatch(allText.substring(0, 500));
-
-  // STEP 5: Combina risultati — priorità a classificazione web
+  // STEP 4: Combina risultati — UNA sola categoria principale con alta confidenza
   let suggerimenti = [];
 
-  if (webClassification.length > 0) {
-    suggerimenti = webClassification.map(wc => ({
-      famiglia: wc.famiglia,
-      sottofamiglia: wc.sottofamiglia,
-      confidenza: wc.confidenza,
+  if (primaryClassification.length > 0) {
+    // Prendi solo la prima classificazione (più rilevante) come risultato principale
+    const best = primaryClassification[0];
+    suggerimenti.push({
+      famiglia: best.famiglia,
+      sottofamiglia: best.sottofamiglia,
+      confidenza: best.confidenza,
       spiegazione: productInfo
-        ? `Prodotto identificato: ${productInfo.name} (${productInfo.source}). Tipo: ${wc.label}. ${productInfo.descriptions?.[0]?.substring(0, 150) || ''}`
-        : `Classificazione: ${wc.label} (da letteratura scientifica)`
-    }));
-  }
+        ? `Prodotto identificato: ${productInfo.name} (${productInfo.source}). Tipo: ${best.label}. ${productInfo.descriptions?.[0]?.substring(0, 200) || ''}`
+        : `Classificazione: ${best.label} (da letteratura scientifica)`
+    });
 
-  // Aggiungi risultati da keyword arricchito se utili
-  if (enrichedKeywords.length > 0 && enrichedKeywords[0].confidenza > bestKeywordScore) {
-    for (const ek of enrichedKeywords) {
-      if (!suggerimenti.find(s => s.sottofamiglia === ek.sottofamiglia)) {
+    // Aggiungi classificazioni secondarie solo se molto diverse dalla prima
+    for (let i = 1; i < primaryClassification.length; i++) {
+      const sec = primaryClassification[i];
+      if (sec.famiglia !== best.famiglia || sec.sottofamiglia !== best.sottofamiglia) {
         suggerimenti.push({
-          ...ek,
-          spiegazione: productInfo
-            ? `Match arricchito con dati PubChem/UniProt: ${productInfo.name}. ${ek.spiegazione}`
-            : ek.spiegazione
+          famiglia: sec.famiglia,
+          sottofamiglia: sec.sottofamiglia,
+          confidenza: Math.max(5, sec.confidenza - 2), // confidenza ridotta per le secondarie
+          spiegazione: `Classificazione alternativa: ${sec.label}`
         });
       }
     }
+  }
+
+  // Se PubChem ha trovato il composto ma nessuna classificazione regex è scattata
+  if (suggerimenti.length === 0 && pubchem.found) {
+    suggerimenti.push({
+      famiglia: 'Lab Reagents',
+      sottofamiglia: 'CHEMICALS - POLVERI',
+      confidenza: 7,
+      spiegazione: `Composto chimico identificato su PubChem: ${pubchem.name}. ${pubchem.descriptions?.[0]?.substring(0, 200) || ''}`
+    });
+  }
+
+  // Se UniProt ha trovato la proteina
+  if (suggerimenti.length === 0 && uniprot.found) {
+    suggerimenti.push({
+      famiglia: 'Lab Reagents',
+      sottofamiglia: 'ANTICORPI - WB (Western Blot)',
+      confidenza: 6,
+      spiegazione: `Proteina identificata su UniProt: ${uniprot.results[0]?.name}. Potrebbe essere un target per anticorpi o un reagente proteico.`
+    });
   }
 
   // Aggiungi keyword originali come fallback
@@ -314,25 +333,6 @@ async function deepProductSearch(description) {
         suggerimenti.push(kr);
       }
     }
-  }
-
-  // Se PubChem ha trovato il composto ma nessuna classificazione è scattata
-  if (suggerimenti.length === 0 && pubchem.found) {
-    suggerimenti.push({
-      famiglia: 'Lab Reagents',
-      sottofamiglia: 'CHEMICALS - POLVERI',
-      confidenza: 7,
-      spiegazione: `Composto chimico identificato su PubChem: ${pubchem.name}. ${pubchem.descriptions?.[0]?.substring(0, 150) || ''}`
-    });
-  }
-
-  if (suggerimenti.length === 0 && uniprot.found) {
-    suggerimenti.push({
-      famiglia: 'Lab Reagents',
-      sottofamiglia: 'ANTICORPI - WB (Western Blot)',
-      confidenza: 6,
-      spiegazione: `Proteina identificata su UniProt: ${uniprot.results[0]?.name}. Potrebbe essere un target per anticorpi.`
-    });
   }
 
   return {

@@ -146,9 +146,9 @@ const productClassificationRules = [
   // Inibitori / composti chimici
   { pattern: /\b(inhibitor|inibitore|antagonist|agonist|modulator|blocker|activator|compound|small molecule)\b/i,
     famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 8, label: 'Composto chimico / Inibitore' },
-  // Enzimi
-  { pattern: /\b(enzyme|enzima|polymerase|ligase|kinase|phosphatase|protease|nuclease|recombinase|transferase|helicase)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'ENZIMI: restrizione, modifica', confidence: 8, label: 'Enzima' },
+  // Enzimi (priorità alta — match diretto su nome prodotto)
+  { pattern: /\b(enzyme|enzima|polymerase|ligase|kinase|phosphatase|protease|nuclease|recombinase|transferase|helicase|dnase|rnase|deoxyribonuclease|ribonuclease|endonuclease|exonuclease|topoisomerase|reverse transcriptase|caspase|collagenase|trypsin|dispase|luciferase)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'ENZIMI: restrizione, modifica', confidence: 9, label: 'Enzima' },
   // Kit
   { pattern: /\b(kit|assay kit|detection kit|extraction kit|purification kit|isolation kit|elisa)\b/i,
     famiglia: 'Lab Reagents', sottofamiglia: 'KIT: estrazione, purificazione, luciferase assay, kit vitalita, ELISA, enrichment, depletion', confidence: 8, label: 'Kit' },
@@ -221,16 +221,48 @@ function classifyFromText(text) {
 // MOTORE DI RICERCA COMPLETO: keyword + web APIs
 // ═══════════════════════════════════════════════════════════════════════════════
 
+// Valida se il risultato PubChem corrisponde davvero alla query dell'utente
+function validatePubChemResult(query, pubchemName) {
+  if (!pubchemName) return false;
+  const q = query.toLowerCase().replace(/[\s\-_]/g, '');
+  const p = pubchemName.toLowerCase().replace(/[\s\-_]/g, '');
+  // Match esatto o contenuto
+  if (p.includes(q) || q.includes(p)) return true;
+  // Almeno 60% delle lettere in comune
+  const qChars = new Set(q.split(''));
+  const pChars = new Set(p.split(''));
+  let common = 0;
+  for (const c of qChars) if (pChars.has(c)) common++;
+  return common / Math.max(qChars.size, 1) > 0.6;
+}
+
 async function deepProductSearch(description) {
   const startTime = Date.now();
-  const searchLog = [];
+
+  // STEP 0: Classifica l'input dell'utente DIRETTAMENTE con le regole
+  // Questo cattura nomi come "Deoxyribonuclease" → enzima, SENZA bisogno di PubChem
+  const directClassification = classifyFromText(description);
 
   // STEP 1: Keyword matching rapido
   const keywordResults = smartCategoryMatch(description);
   const bestKeywordScore = keywordResults.length > 0 ? keywordResults[0].confidenza : 0;
 
+  // Se classificazione diretta è forte, restituisci subito
+  if (directClassification.length > 0 && directClassification[0].confidenza >= 9) {
+    const best = directClassification[0];
+    return {
+      suggerimenti: [{
+        famiglia: best.famiglia,
+        sottofamiglia: best.sottofamiglia,
+        confidenza: best.confidenza,
+        spiegazione: `Classificazione diretta: ${best.label} (dal nome del prodotto "${description}")`
+      }],
+      fonti: ['Classificazione diretta dal nome prodotto'],
+      tempo: Date.now() - startTime
+    };
+  }
+
   if (bestKeywordScore >= 8) {
-    // Match diretto forte — non serve cercare online
     return {
       suggerimenti: keywordResults,
       fonti: ['Database interno (match diretto)'],
@@ -239,8 +271,6 @@ async function deepProductSearch(description) {
   }
 
   // STEP 2: Ricerca parallela nei database scientifici
-  searchLog.push('Ricerca nei database scientifici...');
-
   const [pubchem, uniprot, europmc] = await Promise.all([
     searchPubChem(description),
     searchUniProt(description),
@@ -248,18 +278,19 @@ async function deepProductSearch(description) {
   ]);
 
   const fonti = [];
-  let primaryText = description + ' ';  // testo primario (PubChem desc + sinonimi)
-  let secondaryText = '';  // testo secondario (abstract PMC — meno affidabile)
+  let primaryText = description + ' ';
   let productInfo = null;
 
-  // Raccogli info da PubChem (PRIMARIA — più affidabile per classificazione)
-  if (pubchem.found) {
+  // Valida PubChem — il nome restituito deve corrispondere alla query
+  if (pubchem.found && validatePubChemResult(description, pubchem.name)) {
     fonti.push(`PubChem: ${pubchem.name}`);
     primaryText += (pubchem.descriptions || []).join(' ') + ' ' + (pubchem.synonyms || []).join(' ') + ' ';
     productInfo = { name: pubchem.name, source: 'PubChem', descriptions: pubchem.descriptions || [], synonyms: pubchem.synonyms || [] };
+  } else if (pubchem.found) {
+    // PubChem ha trovato qualcosa ma non corrisponde — segnala ma non usare per classificazione
+    fonti.push(`PubChem: trovato "${pubchem.name}" (non corrisponde esattamente)`);
   }
 
-  // Raccogli info da UniProt (PRIMARIA)
   if (uniprot.found) {
     fonti.push(`UniProt: ${uniprot.results[0]?.name}`);
     primaryText += uniprot.fullText + ' ';
@@ -268,65 +299,64 @@ async function deepProductSearch(description) {
     }
   }
 
-  // Europe PMC (SECONDARIA — solo per fonti, non per classificazione diretta)
   if (europmc.found) {
     fonti.push(`Europe PMC: ${europmc.articles.length} pubblicazioni`);
-    secondaryText += europmc.fullText + ' ';
   }
 
-  // STEP 3: Classifica SOLO dal testo primario (PubChem/UniProt — evita falsi positivi dagli abstract)
+  // STEP 3: Classifica dal testo primario (input utente + PubChem validato + UniProt)
   const primaryClassification = classifyFromText(primaryText);
 
-  // STEP 4: Combina risultati — UNA sola categoria principale con alta confidenza
+  // STEP 4: Usa classificazione diretta se PubChem non ha aggiunto nulla di meglio
+  let bestClassification = primaryClassification;
+  if (directClassification.length > 0 && (primaryClassification.length === 0 || directClassification[0].confidenza >= primaryClassification[0].confidenza)) {
+    bestClassification = directClassification;
+  }
+
+  // STEP 5: Costruisci suggerimenti
   let suggerimenti = [];
 
-  if (primaryClassification.length > 0) {
-    // Prendi solo la prima classificazione (più rilevante) come risultato principale
-    const best = primaryClassification[0];
+  if (bestClassification.length > 0) {
+    const best = bestClassification[0];
     suggerimenti.push({
       famiglia: best.famiglia,
       sottofamiglia: best.sottofamiglia,
       confidenza: best.confidenza,
       spiegazione: productInfo
         ? `Prodotto identificato: ${productInfo.name} (${productInfo.source}). Tipo: ${best.label}. ${productInfo.descriptions?.[0]?.substring(0, 200) || ''}`
-        : `Classificazione: ${best.label} (da letteratura scientifica)`
+        : `Classificazione: ${best.label} (dal nome del prodotto)`
     });
 
-    // Aggiungi classificazioni secondarie solo se molto diverse dalla prima
-    for (let i = 1; i < primaryClassification.length; i++) {
-      const sec = primaryClassification[i];
-      if (sec.famiglia !== best.famiglia || sec.sottofamiglia !== best.sottofamiglia) {
+    for (let i = 1; i < bestClassification.length && suggerimenti.length < 3; i++) {
+      const sec = bestClassification[i];
+      if (sec.sottofamiglia !== best.sottofamiglia) {
         suggerimenti.push({
           famiglia: sec.famiglia,
           sottofamiglia: sec.sottofamiglia,
-          confidenza: Math.max(5, sec.confidenza - 2), // confidenza ridotta per le secondarie
+          confidenza: Math.max(5, sec.confidenza - 2),
           spiegazione: `Classificazione alternativa: ${sec.label}`
         });
       }
     }
   }
 
-  // Se PubChem ha trovato il composto ma nessuna classificazione regex è scattata
   if (suggerimenti.length === 0 && pubchem.found) {
     suggerimenti.push({
       famiglia: 'Lab Reagents',
       sottofamiglia: 'CHEMICALS - POLVERI',
       confidenza: 7,
-      spiegazione: `Composto chimico identificato su PubChem: ${pubchem.name}. ${pubchem.descriptions?.[0]?.substring(0, 200) || ''}`
+      spiegazione: `Composto chimico trovato su PubChem: ${pubchem.name}. ${pubchem.descriptions?.[0]?.substring(0, 200) || ''}`
     });
   }
 
-  // Se UniProt ha trovato la proteina
   if (suggerimenti.length === 0 && uniprot.found) {
     suggerimenti.push({
       famiglia: 'Lab Reagents',
       sottofamiglia: 'ANTICORPI - WB (Western Blot)',
       confidenza: 6,
-      spiegazione: `Proteina identificata su UniProt: ${uniprot.results[0]?.name}. Potrebbe essere un target per anticorpi o un reagente proteico.`
+      spiegazione: `Proteina identificata su UniProt: ${uniprot.results[0]?.name}. Potrebbe essere un target per anticorpi.`
     });
   }
 
-  // Aggiungi keyword originali come fallback
   if (keywordResults.length > 0 && suggerimenti.length < 3) {
     for (const kr of keywordResults) {
       if (!suggerimenti.find(s => s.sottofamiglia === kr.sottofamiglia)) {
@@ -468,7 +498,7 @@ const categoryKeywords = {
   'Lab Reagents|REAL TIME PCR: sybr green, mastermix, taqman, probes': ['sybr', 'taqman', 'probe', 'real time', 'qpcr', 'rt-pcr', 'mastermix', 'power sybr'],
   'Lab Reagents|NGS: preparazione librerie, purificazione, frammentazione': ['ngs', 'next gen', 'libreria', 'library prep', 'frammentazione', 'nextera', 'truseq', 'illumina kit', 'sequencing kit'],
   'Lab Reagents|CLONING: cellule competenti, kit clonaggio': ['competenti', 'competent cell', 'clonaggio', 'cloning', 'gateway', 'topo', 'gibson', 'ligation', 'ligasi'],
-  'Lab Reagents|ENZIMI: restrizione, modifica': ['enzima restrizione', 'restriction enzyme', 'ecori', 'bamhi', 'hindiii', 'xhoi', 'noti', 'ligase', 'fosfatasi', 'chinasi', 'phosphatase', 'kinase'],
+  'Lab Reagents|ENZIMI: restrizione, modifica': ['enzima restrizione', 'restriction enzyme', 'ecori', 'bamhi', 'hindiii', 'xhoi', 'noti', 'ligase', 'fosfatasi', 'chinasi', 'phosphatase', 'kinase', 'nuclease', 'dnase', 'rnase', 'deoxyribonuclease', 'ribonuclease', 'endonuclease', 'exonuclease', 'topoisomerase', 'caspase', 'collagenase', 'trypsin', 'dispase', 'proteinase', 'reverse transcriptase', 'luciferase', 'benzonase', 'turbo dnase', 'proteinase k'],
   'Lab Reagents|OLIGO': ['oligo', 'oligonucleotide', 'primer', 'primers', 'probe', 'custom oligo', 'idt'],
   'Lab Reagents|SIERI: FBS, FCS, dializzati, horse': ['fbs', 'fcs', 'siero', 'serum', 'fetal bovine', 'horse serum', 'siero fetale'],
   'Lab Reagents|TERRENI: DMEM, RPMI, Alpha MEM, MEM, Iscove\'s': ['dmem', 'rpmi', 'mem', 'terreno', 'medium', 'media', 'iscove', 'f12', 'ham'],
@@ -577,42 +607,43 @@ const brandAliases = {
 // DATI — Distributori e condizioni
 // ═══════════════════════════════════════════════════════════════════════════════
 
+
 const distributors = [
-  { nome: 'Beckman Coulter Srl', min_ordine: '/', spese_spedizione: '50 \u20ac', spese_ghiaccio_secco: '/' },
-  { nome: 'Bio-Techne s.r.l.', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '50 \u20ac' },
-  { nome: 'Campoverde', min_ordine: '/', spese_spedizione: '42 \u20ac (nulle su Milano)', spese_ghiaccio_secco: '15 \u20ac' },
-  { nome: 'D.B.A.', min_ordine: '/', spese_spedizione: '\u20ac 20 (+IVA) per ordini < \u20ac 500', spese_ghiaccio_secco: '30 \u20ac' },
-  { nome: 'Diatech Lab Line srl', min_ordine: '150 \u20ac', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
-  { nome: 'D.I.D. Diagnostic International Distribution Spa', min_ordine: '/', spese_spedizione: '\u20ac 40 per ordini < \u20ac 350', spese_ghiaccio_secco: '25 \u20ac' },
-  { nome: 'Eppendorf', min_ordine: '/', spese_spedizione: '\u20ac 35 (+IVA) per ordini < \u20ac 500', spese_ghiaccio_secco: '/' },
-  { nome: 'Gilson Italia s.r.l.', min_ordine: '300 \u20ac', spese_spedizione: '\u20ac 50 (+IVA) per ordini < \u20ac 500', spese_ghiaccio_secco: '/' },
-  { nome: 'MedChemTronica', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
-  { nome: 'Qiagen', min_ordine: '/', spese_spedizione: '\u20ac 40 (+IVA) per ordini < \u20ac 1000; \u20ac 38 per ordini < \u20ac 400', spese_ghiaccio_secco: '24 \u20ac' },
-  { nome: 'Sarstedt', min_ordine: 'superiore a 200 \u20ac (IVA esclusa)', spese_spedizione: '\u20ac 25 (+IVA) per ordini < \u20ac 300', spese_ghiaccio_secco: '/' },
-  { nome: 'Tema Ricerca', min_ordine: '/', spese_spedizione: '\u20ac 20 (+IVA) per ordini < \u20ac 400', spese_ghiaccio_secco: '30 \u20ac' },
-  { nome: 'Bio-Rad', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
-  { nome: 'Promega', min_ordine: '/', spese_spedizione: '\u20ac 50 (+IVA) per ordini < \u20ac 400', spese_ghiaccio_secco: '\u20ac 30 (+IVA) per ordini < \u20ac 400' },
-  { nome: 'AGILENT TECHNOLOGIES ITALIA SPA', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
-  { nome: 'Carlo Erba Reagents Srl', min_ordine: '50 \u20ac', spese_spedizione: '50-200\u20ac=\u20ac65+IVA; 200-500\u20ac=\u20ac48+IVA; HORIZON=\u20ac40; METABION=\u20ac18', spese_ghiaccio_secco: 'Ghiaccio secco \u20ac30+IVA; CPA \u20ac70+IVA' },
-  { nome: 'Euroclone S.p.A.', min_ordine: '150 \u20ac', spese_spedizione: '/', spese_ghiaccio_secco: 'Nessuna (eccetto azoto liquido dewar: 450 \u20ac)' },
+  { nome: 'Euroclone S.p.A.', min_ordine: '150 \u20ac', spese_spedizione: 'Nessuna', spese_ghiaccio_secco: 'Nessuna (eccetto azoto liquido dewar: \u20ac450)' },
+  { nome: 'Gilson Italia srl', min_ordine: '300 \u20ac', spese_spedizione: '\u20ac50 per ordini < \u20ac500', spese_ghiaccio_secco: '/' },
   { nome: 'Merck Life Science S.R.L.', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '55 \u20ac' },
   { nome: 'REVVITY ITALIA SPA', min_ordine: '/', spese_spedizione: 'variabile', spese_ghiaccio_secco: 'variabile' },
-  { nome: 'SARTORIUS ITALY SRL', min_ordine: '/', spese_spedizione: '28 \u20ac (per ordini < 500 \u20ac)', spese_ghiaccio_secco: '/' },
-  { nome: 'S.I.A.L. S.r.l.', min_ordine: '/', spese_spedizione: '20 \u20ac per ordini < 200 \u20ac', spese_ghiaccio_secco: '20 \u20ac per ordini < 200 \u20ac' },
-  { nome: 'VWR International S.r.l.', min_ordine: 'min 400 \u20ac, altrimenti \u20ac30 gestione', spese_spedizione: '<400\u20ac: \u20ac30; >400\u20ac: gratuito', spese_ghiaccio_secco: '/' },
-  { nome: 'Starlab', min_ordine: '100 \u20ac', spese_spedizione: '\u20ac 40 per ordini < \u20ac 400', spese_ghiaccio_secco: '/' },
-  { nome: 'Twin Helix srl', min_ordine: '100 \u20ac', spese_spedizione: '\u20ac 25 per ordini < \u20ac 250', spese_ghiaccio_secco: '30 \u20ac' },
-  { nome: '2Biological Instruments', min_ordine: '150 \u20ac', spese_spedizione: '\u20ac 25 per ordini < \u20ac 500', spese_ghiaccio_secco: '/' },
-  { nome: 'Aurogene', min_ordine: '500 \u20ac', spese_spedizione: '\u20ac 25 (+IVA) per ordini < \u20ac 500', spese_ghiaccio_secco: '/' },
-  { nome: 'Life Technologies (ThermoFisher)', min_ordine: '/', spese_spedizione: '<\u20ac2000: \u20ac48+IVA; Hazard: \u20ac48; Oligo tubi: \u20ac12; Oligo piastre: \u20ac70', spese_ghiaccio_secco: '\u20ac 48+IVA' },
-  { nome: 'Roche', min_ordine: '/', spese_spedizione: '\u20ac 30 per ordini < \u20ac 300', spese_ghiaccio_secco: '/' },
-  { nome: 'Illumina', min_ordine: '/', spese_spedizione: '150 \u20ac', spese_ghiaccio_secco: '/' },
-  { nome: 'TebuBio', min_ordine: '/', spese_spedizione: '\u20ac 30 (+IVA) per ordini < \u20ac 100', spese_ghiaccio_secco: '\u20ac 52 ghiaccio; \u20ac 255 azoto liquido' },
-  { nome: 'Miltenyi', min_ordine: '/', spese_spedizione: '\u20ac 35 (+IVA) per ordini < \u20ac 500', spese_ghiaccio_secco: '/' },
+  { nome: 'SARTORIUS ITALY SRL', min_ordine: '/', spese_spedizione: '\u20ac28 per ordini < \u20ac500', spese_ghiaccio_secco: '/' },
+  { nome: 'S.I.A.L. S.r.l.', min_ordine: '200 \u20ac', spese_spedizione: '\u20ac20 per ordini < \u20ac200', spese_ghiaccio_secco: '\u20ac20 per ordini < \u20ac200' },
+  { nome: 'Starlab srl', min_ordine: '100 \u20ac', spese_spedizione: '\u20ac40 per ordini < \u20ac400', spese_ghiaccio_secco: '/' },
+  { nome: 'TebuBio srl', min_ordine: '/', spese_spedizione: '\u20ac30 (+IVA) per ordini < \u20ac100', spese_ghiaccio_secco: '\u20ac52 ghiaccio; \u20ac255 azoto liquido' },
+  { nome: 'Tema Ricerca srl', min_ordine: '/', spese_spedizione: '\u20ac20 (+IVA) per ordini < \u20ac400', spese_ghiaccio_secco: '30 \u20ac' },
+  { nome: 'Twin Helix srl', min_ordine: '100 \u20ac', spese_spedizione: '\u20ac25 per ordini < \u20ac250', spese_ghiaccio_secco: '30 \u20ac' },
+  { nome: 'VWR International S.r.l.', min_ordine: '400 \u20ac (altrimenti \u20ac30 gestione)', spese_spedizione: '<\u20ac400: \u20ac30; >\u20ac400: gratuito', spese_ghiaccio_secco: 'vedi condizioni' },
+  { nome: 'Campoverde srl', min_ordine: '/', spese_spedizione: '\u20ac42 (nulle su Milano)', spese_ghiaccio_secco: '15 \u20ac' },
+  { nome: 'AGILENT TECHNOLOGIES ITALIA SPA', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
+  { nome: 'Beckman Coulter Srl', min_ordine: '/', spese_spedizione: '50 \u20ac', spese_ghiaccio_secco: '/' },
+  { nome: 'Carlo Erba Reagents Srl', min_ordine: '50 \u20ac', spese_spedizione: '50-200\u20ac=\u20ac65+IVA; 200-500\u20ac=\u20ac48+IVA; Web 50-200\u20ac=\u20ac35; Web 200-300\u20ac=\u20ac20', spese_ghiaccio_secco: 'Ghiaccio secco \u20ac30+IVA; CPA \u20ac70+IVA' },
+  { nome: 'D.I.D. Diagnostic International Distribution Spa', min_ordine: '/', spese_spedizione: '\u20ac40 per ordini < \u20ac350', spese_ghiaccio_secco: '25 \u20ac' },
+  { nome: 'Promega Italia srl', min_ordine: '/', spese_spedizione: '\u20ac50 per ordini < \u20ac400', spese_ghiaccio_secco: '\u20ac30 per ordini < \u20ac400' },
+  { nome: 'Sarstedt srl', min_ordine: '200 \u20ac (+IVA)', spese_spedizione: '\u20ac25 (+IVA) per ordini < \u20ac300', spese_ghiaccio_secco: '/' },
+  { nome: 'Bio-Rad', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
+  { nome: 'Bio-Techne s.r.l.', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '50 \u20ac' },
+  { nome: 'Diatech Lab Line srl', min_ordine: '150 \u20ac', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
+  { nome: 'Eppendorf srl', min_ordine: '/', spese_spedizione: '\u20ac35 (+IVA) per ordini < \u20ac500', spese_ghiaccio_secco: '/' },
+  { nome: 'MedChemTronica', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
+  { nome: 'Qiagen srl', min_ordine: '/', spese_spedizione: '\u20ac40 (+IVA) per ordini < \u20ac1000; \u20ac38 per ordini < \u20ac400', spese_ghiaccio_secco: '24 \u20ac' },
+  { nome: 'Illumina Italy srl', min_ordine: '/', spese_spedizione: '150 \u20ac', spese_ghiaccio_secco: '/' },
+  { nome: 'Life Technologies (ThermoFisher)', min_ordine: '/', spese_spedizione: '<\u20ac2000: \u20ac48+IVA; Hazard: \u20ac48; Oligo tubi: \u20ac12; Oligo piastre: \u20ac70', spese_ghiaccio_secco: '\u20ac48+IVA' },
+  { nome: 'Roche Diagnostics', min_ordine: '/', spese_spedizione: '\u20ac30 per ordini < \u20ac300', spese_ghiaccio_secco: '/' },
+  { nome: 'Miltenyi Biotec srl', min_ordine: '/', spese_spedizione: '\u20ac35 (+IVA) per ordini < \u20ac500', spese_ghiaccio_secco: '/' },
   { nome: 'BECTON DICKINSON ITALIA S.p.A.', min_ordine: '/', spese_spedizione: '\u20ac50+IVA std; \u20ac75+IVA espresso; \u20ac35 ordini <\u20ac1000', spese_ghiaccio_secco: '/' },
   { nome: 'Eurofins Genomics Italy S.r.l.', min_ordine: '/', spese_spedizione: 'gratuite', spese_ghiaccio_secco: '/' },
   { nome: 'LGC Standards', min_ordine: '/', spese_spedizione: '/', spese_ghiaccio_secco: '/' },
-  { nome: 'PRODOTTI GIANNI', min_ordine: '/', spese_spedizione: '\u20ac29 gestione; gratis >600\u20ac', spese_ghiaccio_secco: 'Dry ice: 20\u20ac; DataLogger: 60\u20ac; HAZARD: 40\u20ac' },
+  { nome: '2Biological Instruments', min_ordine: '150 \u20ac', spese_spedizione: '\u20ac25 per ordini < \u20ac500', spese_ghiaccio_secco: '/' },
+  { nome: 'Aurogene srl', min_ordine: '500 \u20ac', spese_spedizione: '\u20ac25 (+IVA) per ordini < \u20ac500', spese_ghiaccio_secco: '/' },
+  { nome: 'PRODOTTI GIANNI srl', min_ordine: '/', spese_spedizione: '\u20ac29 gestione; gratis >600\u20ac', spese_ghiaccio_secco: 'Dry ice: 20\u20ac; DataLogger: 60\u20ac; HAZARD: 40\u20ac' },
+  { nome: 'D.B.A. Italia srl', min_ordine: '/', spese_spedizione: '\u20ac20 (+IVA) per ordini < \u20ac500', spese_ghiaccio_secco: '30 \u20ac' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -681,6 +712,20 @@ const distributorBrands = [
   { distributore: 'Carlo Erba Reagents', brand: 'Thermo Fisher (ACROS, ALFA AESAR)', esclusiva: false },
   { distributore: 'Carlo Erba Reagents', brand: 'PROMOCELL', esclusiva: false },
   { distributore: 'Carlo Erba Reagents', brand: 'SOLIS BIODYNE', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'GS BIOTECH', esclusiva: true },
+  { distributore: 'Carlo Erba Reagents', brand: 'JET BIOFIL', esclusiva: true },
+  { distributore: 'Carlo Erba Reagents', brand: 'LLG', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'Glentham Life Science', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'CPAchem', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'BRAND GMBH', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'EVERMED', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'LABOR SECURITY SYSTEM', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'SCALE Biosciences', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'LevitasBio', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'AZENTA (4tiTUDE)', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'Thermo Fisher Scientific (Fermentas)', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'Thermo Fisher Scientific (Nunc, MBP)', esclusiva: false },
+  { distributore: 'Carlo Erba Reagents', brand: 'LNI', esclusiva: false },
   { distributore: 'Euroclone S.p.A.', brand: '10X Genomics', esclusiva: true },
   { distributore: 'Euroclone S.p.A.', brand: 'BMG Labtech', esclusiva: true },
   { distributore: 'Euroclone S.p.A.', brand: 'Cell Signaling Technology', esclusiva: true },
@@ -695,6 +740,19 @@ const distributorBrands = [
   { distributore: 'Euroclone S.p.A.', brand: 'Polyplus-Transfection', esclusiva: false },
   { distributore: 'Euroclone S.p.A.', brand: 'Roche', esclusiva: false },
   { distributore: 'Euroclone S.p.A.', brand: 'Zymo', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Applied Cells', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'BiOptic', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Bioreba', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Capp-AHN', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Cedarlane Labs', esclusiva: true },
+  { distributore: 'Euroclone S.p.A.', brand: 'Enzo Life Sciences', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Euroclone Brand', esclusiva: true },
+  { distributore: 'Euroclone S.p.A.', brand: 'Implen', esclusiva: true },
+  { distributore: 'Euroclone S.p.A.', brand: 'ITW reagents (Applichem - Panreac)', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Magtivio', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'Navinci', esclusiva: true },
+  { distributore: 'Euroclone S.p.A.', brand: 'Sigma Zentrifugen', esclusiva: false },
+  { distributore: 'Euroclone S.p.A.', brand: 'System Biosciences', esclusiva: true },
   { distributore: 'GILSON', brand: 'GILSON', esclusiva: true },
   { distributore: 'Merck Life Science', brand: 'Merck/SigmaAldrich/Millipore', esclusiva: false },
   { distributore: 'Merck Life Science', brand: 'Corning/Falcon/Axygen', esclusiva: false },
@@ -702,8 +760,16 @@ const distributorBrands = [
   { distributore: 'Merck Life Science', brand: 'Eppendorf', esclusiva: false },
   { distributore: 'Merck Life Science', brand: 'Roche/KAPA', esclusiva: false },
   { distributore: 'Merck Life Science', brand: 'Greiner', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'Avanti Polar Lipids', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'Hettich', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'IKA', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'Nunc', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'Hamilton', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'Wilmad', esclusiva: false },
+  { distributore: 'Merck Life Science', brand: 'Brand', esclusiva: false },
   { distributore: 'Revvity Italia', brand: 'Revvity Inc.', esclusiva: true },
-  { distributore: 'SARTORIUS ITALY', brand: 'SARTORIUS', esclusiva: true },
+  { distributore: 'SARTORIUS ITALY', brand: 'SARTORIUS INSTRUMENTS GmbH', esclusiva: true },
+  { distributore: 'SARTORIUS ITALY', brand: 'SARTORIUS STEDIM BIOTECH GmbH', esclusiva: true },
   { distributore: 'SIAL', brand: 'Analytik Jena', esclusiva: true },
   { distributore: 'SIAL', brand: 'UVITEC', esclusiva: true },
   { distributore: 'SIAL', brand: 'Charles River', esclusiva: true },
@@ -714,6 +780,22 @@ const distributorBrands = [
   { distributore: 'SIAL', brand: 'BIO-RAD', esclusiva: false },
   { distributore: 'SIAL', brand: 'MERCK', esclusiva: false },
   { distributore: 'SIAL', brand: 'CORNING', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Antibodies.com', esclusiva: true },
+  { distributore: 'SIAL', brand: 'Antibodysystems', esclusiva: true },
+  { distributore: 'SIAL', brand: 'ABM Good', esclusiva: true },
+  { distributore: 'SIAL', brand: 'BigFish', esclusiva: true },
+  { distributore: 'SIAL', brand: 'yourSIAL', esclusiva: true },
+  { distributore: 'SIAL', brand: 'Norgen Biotek', esclusiva: true },
+  { distributore: 'SIAL', brand: 'Signosis Inc', esclusiva: true },
+  { distributore: 'SIAL', brand: 'Varsome', esclusiva: true },
+  { distributore: 'SIAL', brand: 'Agena', esclusiva: true },
+  { distributore: 'SIAL', brand: 'HAIER Biomedical', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Coleparmer/Antylia', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Ohaus', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Exacta Optech', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Biospes', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Cytion', esclusiva: false },
+  { distributore: 'SIAL', brand: 'Twist Bioscience', esclusiva: true },
   { distributore: 'Starlab srl', brand: 'Starlab', esclusiva: true },
   { distributore: 'TEMA RICERCA', brand: 'IDT', esclusiva: true },
   { distributore: 'TEMA RICERCA', brand: 'ORIGENE', esclusiva: true },
@@ -723,6 +805,14 @@ const distributorBrands = [
   { distributore: 'TEMA RICERCA', brand: 'MIRUS', esclusiva: false },
   { distributore: 'TEMA RICERCA', brand: 'LUCIGEN', esclusiva: false },
   { distributore: 'TEMA RICERCA', brand: 'ELABSCIENCE', esclusiva: false },
+  { distributore: 'TEMA RICERCA', brand: 'GENEALL', esclusiva: false },
+  { distributore: 'TEMA RICERCA', brand: 'TOYOBO', esclusiva: false },
+  { distributore: 'TEMA RICERCA', brand: 'ARBOR', esclusiva: true },
+  { distributore: 'TEMA RICERCA', brand: 'REALSEQ', esclusiva: true },
+  { distributore: 'TEMA RICERCA', brand: 'SEQWEEL', esclusiva: true },
+  { distributore: 'TEMA RICERCA', brand: 'SEEKGENE', esclusiva: true },
+  { distributore: 'TEMA RICERCA', brand: 'AFFINITY', esclusiva: false },
+  { distributore: 'TEMA RICERCA', brand: 'BANGS', esclusiva: false },
   { distributore: 'Twin Helix srl', brand: 'Logos Biosystems', esclusiva: true },
   { distributore: 'Twin Helix srl', brand: 'highQu GmbH', esclusiva: true },
   { distributore: 'Twin Helix srl', brand: 'Ibidi', esclusiva: true },
@@ -730,6 +820,30 @@ const distributorBrands = [
   { distributore: 'Twin Helix srl', brand: 'Genscript', esclusiva: false },
   { distributore: 'Twin Helix srl', brand: 'TargetMol', esclusiva: false },
   { distributore: 'Twin Helix srl', brand: 'Repligen', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'NanoEntek', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Protein Fluidics Inc.', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'IVTech srl', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'PHC Laboratory Consumables', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'Reprocell Inc.', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'T-Pro Biotechnology', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'ELK Biotechnology', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'LeGene Biosciences', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'Biorep USA', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Microdigital', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Thermo Fisher Storage Products', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'CellInk (BICO)', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Xylyx Bio', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'RWD Life Science', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'All Sheng', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Altemis Lab', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'Cell Dynamics', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'Brady Corp', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Idylle', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'Dispendix GmbH', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'BiomimX srl', esclusiva: true },
+  { distributore: 'Twin Helix srl', brand: 'Biocomp', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Scienion', esclusiva: false },
+  { distributore: 'Twin Helix srl', brand: 'Bio3DPrinting', esclusiva: false },
   { distributore: 'VWR International', brand: 'Avantor', esclusiva: true },
   { distributore: 'VWR International', brand: 'JT Baker', esclusiva: true },
   { distributore: 'VWR International', brand: 'QuantaBio', esclusiva: true },
@@ -742,6 +856,31 @@ const distributorBrands = [
   { distributore: 'VWR International', brand: 'Sartorius', esclusiva: false },
   { distributore: 'VWR International', brand: 'Thermo Fisher Scientific', esclusiva: false },
   { distributore: 'VWR International', brand: 'Oxford Nanopore', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Applichem', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Bertin technologies', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Biotium', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Biowest', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Brand', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Cytiva', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Distek', esclusiva: false },
+  { distributore: 'VWR International', brand: 'ECHO', esclusiva: false },
+  { distributore: 'VWR International', brand: 'GenScript', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Gilson', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Greiner', esclusiva: false },
+  { distributore: 'VWR International', brand: 'iST Scientific', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Leica', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Molecular Devices', esclusiva: false },
+  { distributore: 'VWR International', brand: 'MP Biomedicals', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Omega Bio-tek', esclusiva: false },
+  { distributore: 'VWR International', brand: 'OriGene', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Pall', esclusiva: false },
+  { distributore: 'VWR International', brand: 'PanReac AppliChem', esclusiva: false },
+  { distributore: 'VWR International', brand: 'PHCBI', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Polyplus', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Tecan', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Biohit', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Gosselin', esclusiva: false },
+  { distributore: 'VWR International', brand: 'Duran', esclusiva: false },
   { distributore: 'PROMEGA', brand: 'Promega', esclusiva: true },
   { distributore: 'SARSTEDT', brand: 'Sarstedt', esclusiva: true },
   { distributore: 'MILTENYI', brand: 'Miltenyi', esclusiva: true },
@@ -753,6 +892,37 @@ const distributorBrands = [
   { distributore: 'TEBUBIO', brand: 'BPS Bioscience', esclusiva: false },
   { distributore: 'TEBUBIO', brand: 'Raybiotech', esclusiva: false },
   { distributore: 'TEBUBIO', brand: 'Genecopoeia', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Broadpharm', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Spirochrome AG', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Biolife Solutions', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Echelon Biosciences', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Cedarlane Laboratoires', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Zenbio', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Cytoskeleton', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Rockland Immunochemicals', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Dojindo Europe', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Cell Applications', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'PBL Assay Science', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Anaspec', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Prodo Laboratories', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Lifesensors', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'iXcells Biotechnologies', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Reprocell USA', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'BioIVT', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Omega Bio-tek', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Innovative Research', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'AIM Biotech', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Meridian Life Sciences', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Polysciences Europe', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Cytion', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Abnova', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Bioauxilium Research', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Eurogentec', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Biocolor ltd', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Biogems', esclusiva: true },
+  { distributore: 'TEBUBIO', brand: 'Platypus', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Abbkine', esclusiva: false },
+  { distributore: 'TEBUBIO', brand: 'Boster Bio', esclusiva: false },
   { distributore: '2BIOLOGICAL', brand: 'FINE SCIENCE TOOLS', esclusiva: true },
   { distributore: 'BECTON DICKINSON', brand: 'BD', esclusiva: true },
   { distributore: 'EPPENDORF', brand: 'EPPENDORF', esclusiva: true },

@@ -1,12 +1,22 @@
 const express = require('express');
-const Anthropic = require('@anthropic-ai/sdk');
 const path = require('path');
+
+let anthropic = null;
+try {
+  const Anthropic = require('@anthropic-ai/sdk');
+  if (process.env.ANTHROPIC_API_KEY) {
+    anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
+    console.log('Anthropic AI attivo');
+  } else {
+    console.log('ANTHROPIC_API_KEY non configurata - AI matching disabilitato');
+  }
+} catch (e) {
+  console.log('Anthropic SDK non disponibile - AI matching disabilitato');
+}
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
-
-const anthropic = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY });
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATI INTEGRATI — Categorie merceologiche Alyante
@@ -391,6 +401,18 @@ Prodotto/servizio da classificare: "${description}"
 Suggerisci le 1-3 categorie piu appropriate. Rispondi SOLO con JSON:
 {"suggerimenti":[{"famiglia":"...","sottofamiglia":"...","confidenza":9,"spiegazione":"..."}]}`;
 
+  if (!anthropic) {
+    // Fallback: ricerca testuale senza AI
+    const q = description.toLowerCase();
+    const matches = categories.filter(c =>
+      c.sottofamiglia.toLowerCase().includes(q) || c.famiglia.toLowerCase().includes(q)
+    ).slice(0, 3);
+    return res.json({ suggerimenti: matches.map(m => ({
+      famiglia: m.famiglia, sottofamiglia: m.sottofamiglia,
+      confidenza: 7, spiegazione: 'Ricerca testuale (AI non configurata)'
+    }))});
+  }
+
   try {
     const message = await anthropic.messages.create({
       model: 'claude-haiku-4-5-20251001',
@@ -460,16 +482,18 @@ app.post('/api/alternative-hunter', async (req, res) => {
   }
 
   // AI fallback
-  try {
-    const message = await anthropic.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 1024,
-      messages: [{ role: 'user', content: `Sei un esperto procurement life science. Il brand "${brand}" non e nel nostro database. Suggerisci 3-5 alternative (brand simili). JSON: {"alternative":[{"brand":"...","motivo":"..."}]}` }]
-    });
-    const text = message.content[0].text.trim();
-    const jsonMatch = text.match(/\{[\s\S]*\}/);
-    if (jsonMatch) return res.json({ ...JSON.parse(jsonMatch[0]), tipo: 'ai_alternative' });
-  } catch (_) {}
+  if (anthropic) {
+    try {
+      const message = await anthropic.messages.create({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1024,
+        messages: [{ role: 'user', content: `Sei un esperto procurement life science. Il brand "${brand}" non e nel nostro database. Suggerisci 3-5 alternative (brand simili). JSON: {"alternative":[{"brand":"...","motivo":"..."}]}` }]
+      });
+      const text = message.content[0].text.trim();
+      const jsonMatch = text.match(/\{[\s\S]*\}/);
+      if (jsonMatch) return res.json({ ...JSON.parse(jsonMatch[0]), tipo: 'ai_alternative' });
+    } catch (_) {}
+  }
 
   res.json({ trovati: [], tipo: 'nessun_risultato' });
 });

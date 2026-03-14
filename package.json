@@ -4,15 +4,13 @@
   "description": "Tool categorie merceologiche e distributori - TIGEM Acquisti",
   "main": "server.js",
   "scripts": {
-    "start": "node server.js",
-    "dev": "node --watch server.js"
+    "start": "node server.js"
   },
   "engines": {
     "node": ">=18.0.0"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.39.0",
-    "@supabase/supabase-js": "^2.49.4",
     "express": "^4.21.2"
   }
 }

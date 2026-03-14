@@ -3,199 +3,86 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TIGEM Acquisti – Life Science Procurement</title>
+  <title>TIGEM Acquisti Tool</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 </head>
 <body>
-
-  <!-- ── SIDEBAR ────────────────────────────────────────────────────────── -->
-  <aside class="sidebar" id="sidebar">
-    <div class="sidebar-logo">
-      <span class="logo-t">TIGEM</span><span class="logo-a">Acquisti</span>
-      <button class="sidebar-toggle" id="sidebar-toggle" title="Toggle sidebar">&#10094;</button>
-    </div>
-
-    <nav class="sidebar-nav">
-      <a href="#" class="nav-item active" data-page="dashboard">
-        <span class="nav-icon">&#127968;</span>
-        <span class="nav-label">Dashboard</span>
-      </a>
-      <a href="#" class="nav-item" data-page="categorie">
-        <span class="nav-icon">&#127991;</span>
-        <span class="nav-label">Categorie Alyante</span>
-      </a>
-      <a href="#" class="nav-item" data-page="alternative">
-        <span class="nav-icon">&#8644;</span>
-        <span class="nav-label">Alternative Hunter</span>
-      </a>
-
-      <div class="nav-divider"></div>
-      <div class="nav-section">Catalog</div>
-
-      <a href="#" class="nav-item" data-page="suppliers">
-        <span class="nav-icon">&#127981;</span>
-        <span class="nav-label">Suppliers</span>
-      </a>
-      <a href="#" class="nav-item" data-page="distributors">
-        <span class="nav-icon">&#128230;</span>
-        <span class="nav-label">Distributors</span>
-      </a>
-      <a href="#" class="nav-item" data-page="products">
-        <span class="nav-icon">&#128196;</span>
-        <span class="nav-label">Products</span>
-      </a>
+  <div class="layout">
+    <!-- Sidebar -->
+    <nav class="sidebar">
+      <div class="sidebar-header">
+        <h2>TIGEM</h2>
+        <span>Ufficio Acquisti</span>
+      </div>
+      <ul class="nav-links">
+        <li><a href="#" class="nav-link active" data-page="categorie">
+          <span class="icon">🏷️</span> Categorie Alyante</a></li>
+        <li><a href="#" class="nav-link" data-page="distributori">
+          <span class="icon">🏢</span> Distributori</a></li>
+        <li><a href="#" class="nav-link" data-page="brand-search">
+          <span class="icon">🔍</span> Cerca Brand</a></li>
+        <li><a href="#" class="nav-link" data-page="alternative">
+          <span class="icon">🔄</span> Alternative Hunter</a></li>
+      </ul>
     </nav>
-  </aside>
 
-  <!-- ── MAIN CONTENT ───────────────────────────────────────────────────── -->
-  <main class="main-content" id="main">
-
-    <!-- DASHBOARD -->
-    <section id="page-dashboard" class="page active">
-      <h1 class="page-title">Welcome!</h1>
-
-      <div class="stat-cards">
-        <div class="stat-card stat-blue">
-          <span class="stat-label">Suppliers</span>
-          <span class="stat-value" id="stat-suppliers">—</span>
+    <!-- Main -->
+    <main class="main">
+      <!-- PAGE: Categorie Alyante -->
+      <section class="page active" id="page-categorie">
+        <h1>Categorie Merceologiche Alyante</h1>
+        <p class="subtitle">Inserisci la descrizione di un prodotto o servizio e l'AI suggerira la categoria corretta.</p>
+        <div class="search-box">
+          <input type="text" id="cat-input" placeholder="Es: puntali con filtro 200ul, anticorpo anti-GFP, sequenziamento..." />
+          <button id="cat-btn" onclick="matchCategory()">Cerca con AI</button>
         </div>
-        <div class="stat-card stat-green">
-          <span class="stat-label">Distributori</span>
-          <span class="stat-value" id="stat-distributors">—</span>
+        <div id="cat-results" class="results-area"></div>
+        <h2 style="margin-top:2rem">Elenco completo categorie</h2>
+        <div id="cat-tree" class="cat-tree"></div>
+      </section>
+
+      <!-- PAGE: Distributori -->
+      <section class="page" id="page-distributori">
+        <h1>Distributori e Condizioni</h1>
+        <p class="subtitle">Consulta le condizioni di acquisto dei nostri distributori.</p>
+        <div class="search-box">
+          <input type="text" id="dist-input" placeholder="Cerca distributore..." oninput="filterDistributors()" />
         </div>
-        <div class="stat-card stat-purple">
-          <span class="stat-label">Brand mappati</span>
-          <span class="stat-value" id="stat-brands">—</span>
+        <div id="dist-list" class="card-grid"></div>
+      </section>
+
+      <!-- PAGE: Brand Search -->
+      <section class="page" id="page-brand-search">
+        <h1>Cerca Brand / Fornitore</h1>
+        <p class="subtitle">Trova quale distributore italiano vende un determinato brand.</p>
+        <div class="search-box">
+          <input type="text" id="brand-input" placeholder="Es: Invitrogen, NEB, Zymo, Takara..." />
+          <button onclick="searchBrand()">Cerca</button>
         </div>
-        <div class="stat-card stat-teal">
-          <span class="stat-label">Categorie Alyante</span>
-          <span class="stat-value" id="stat-categories">—</span>
+        <div id="brand-results" class="results-area"></div>
+      </section>
+
+      <!-- PAGE: Alternative Hunter -->
+      <section class="page" id="page-alternative">
+        <h1>Alternative Hunter</h1>
+        <p class="subtitle">Cerca distributori alternativi per un brand. Se non presente, l'AI suggerira alternative.</p>
+        <div class="search-box">
+          <input type="text" id="alt-input" placeholder="Nome brand..." />
+          <button onclick="findAlternatives()">Cerca alternative</button>
         </div>
-      </div>
+        <div id="alt-results" class="results-area"></div>
+      </section>
+    </main>
+  </div>
 
-      <div class="dash-grid">
-        <div class="dash-card">
-          <h3 class="dash-card-title">Top Distributori</h3>
-          <div id="top-distributors" class="dash-list"></div>
-        </div>
-        <div class="dash-card">
-          <h3 class="dash-card-title">Ricerca rapida brand</h3>
-          <div class="search-bar">
-            <input type="text" id="dash-search" placeholder="Cerca un brand..." autocomplete="off">
-            <button class="search-btn" id="dash-search-btn">&#10148;</button>
-          </div>
-          <div id="dash-search-results"></div>
-        </div>
-      </div>
-    </section>
-
-    <!-- CATEGORIE ALYANTE -->
-    <section id="page-categorie" class="page">
-      <h1 class="page-title">Categorie Merceologiche Alyante</h1>
-      <p class="page-subtitle">Inserisci la descrizione di un prodotto o servizio e l'AI suggerirà la famiglia e sottofamiglia corretta.</p>
-
-      <div class="search-bar search-bar-lg">
-        <input type="text" id="cat-input"
-          placeholder="es. puntali Eppendorf, anticorpo anti-GAPDH WB, kit estrazione RNA..."
-          autocomplete="off">
-        <button class="search-btn" id="cat-btn">
-          <span class="btn-text">&#10148;</span>
-          <span class="spinner hidden"></span>
-        </button>
-      </div>
-
-      <div id="cat-results" class="hidden results-section"></div>
-      <div id="cat-error" class="error-box hidden"></div>
-
-      <div class="section-block">
-        <h2 class="section-title">Tutte le categorie</h2>
-        <div class="search-bar search-bar-sm">
-          <input type="text" id="cat-filter" placeholder="Filtra...">
-        </div>
-        <div id="cat-tree"></div>
-      </div>
-    </section>
-
-    <!-- ALTERNATIVE HUNTER -->
-    <section id="page-alternative" class="page">
-      <h1 class="page-title accent-title">Alternative Hunter</h1>
-      <p class="page-subtitle">Trova distributori alternativi per un brand o scopri fornitori equivalenti per i tuoi prodotti.</p>
-
-      <div class="search-bar search-bar-lg">
-        <input type="text" id="alt-input"
-          placeholder="Inserisci il nome del brand per trovare alternative..."
-          autocomplete="off">
-        <button class="search-btn" id="alt-btn">
-          <span class="btn-text">&#10148;</span>
-          <span class="spinner hidden"></span>
-        </button>
-      </div>
-
-      <div id="alt-results" class="hidden results-section"></div>
-      <div id="alt-error" class="error-box hidden"></div>
-    </section>
-
-    <!-- SUPPLIERS -->
-    <section id="page-suppliers" class="page">
-      <h1 class="page-title blue-title">Biotech Suppliers</h1>
-      <p class="page-subtitle">Discover leading suppliers of antibodies, reagents, proteins & lab equipment</p>
-
-      <div class="search-bar">
-        <input type="text" id="supp-search" placeholder="Search companies..." autocomplete="off">
-        <button class="search-btn" id="supp-search-btn">&#10148;</button>
-      </div>
-
-      <div id="supp-grid" class="card-grid"></div>
-    </section>
-
-    <!-- DISTRIBUTORS -->
-    <section id="page-distributors" class="page">
-      <h1 class="page-title blue-title">Biotech Distributors</h1>
-      <p class="page-subtitle">Distributori italiani ed europei di anticorpi, reagenti, proteine ed equipment</p>
-
-      <div class="search-bar">
-        <input type="text" id="dist-search" placeholder="Search distributors..." autocomplete="off">
-        <button class="search-btn" id="dist-search-btn">&#10148;</button>
-      </div>
-
-      <div id="dist-grid" class="card-grid"></div>
-    </section>
-
-    <!-- PRODUCTS -->
-    <section id="page-products" class="page">
-      <h1 class="page-title">Search Products</h1>
-
-      <div class="product-search-form">
-        <input type="text" id="prod-code" placeholder="Product code">
-        <input type="text" id="prod-desc" placeholder="Description">
-        <input type="text" id="prod-supplier" placeholder="Supplier">
-        <input type="text" id="prod-gene" placeholder="Gene symbol">
-        <select id="prod-type">
-          <option value="">Product type</option>
-          <option value="antibody">Antibody</option>
-          <option value="kit">Kit</option>
-          <option value="reagent">Reagent</option>
-          <option value="consumable">Consumable</option>
-          <option value="equipment">Equipment</option>
-          <option value="chemical">Chemical</option>
-        </select>
-        <button class="btn-search" id="prod-btn">SEARCH</button>
-      </div>
-
-      <div id="prod-results" class="results-section"></div>
-    </section>
-
-    <!-- DETAIL MODAL -->
-    <div class="modal-overlay hidden" id="modal-overlay">
-      <div class="modal" id="modal">
-        <button class="modal-close" id="modal-close">&times;</button>
-        <div id="modal-content"></div>
-      </div>
+  <!-- Modal -->
+  <div class="modal-overlay" id="modal" onclick="if(event.target===this)closeModal()">
+    <div class="modal-content">
+      <button class="modal-close" onclick="closeModal()">&times;</button>
+      <div id="modal-body"></div>
     </div>
-
-  </main>
+  </div>
 
   <script src="app.js"></script>
 </body>

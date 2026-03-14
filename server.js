@@ -1,9 +1,347 @@
 const express = require('express');
 const path = require('path');
+const https = require('https');
+const http = require('http');
 
 const app = express();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// HTTP HELPER — per chiamate API esterne
+// ═══════════════════════════════════════════════════════════════════════════════
+
+function httpGet(url, timeout = 8000) {
+  return new Promise((resolve) => {
+    const client = url.startsWith('https') ? https : http;
+    const req = client.get(url, { timeout, headers: { 'User-Agent': 'TIGEM-Acquisti/1.0', 'Accept': 'application/json' } }, (res) => {
+      let data = '';
+      res.on('data', chunk => data += chunk);
+      res.on('end', () => {
+        try { resolve(JSON.parse(data)); } catch(e) { resolve(null); }
+      });
+    });
+    req.on('error', () => resolve(null));
+    req.on('timeout', () => { req.destroy(); resolve(null); });
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// RICERCA SCIENTIFICA — PubChem, UniProt, Europe PMC
+// ═══════════════════════════════════════════════════════════════════════════════
+
+// PubChem: identifica composti chimici, farmaci, inibitori, reagenti
+async function searchPubChem(query) {
+  try {
+    // 1. Cerca composto per nome
+    const desc = await httpGet(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(query)}/description/JSON`);
+    if (desc?.InformationList?.Information?.length) {
+      const info = desc.InformationList.Information;
+      const descriptions = info.map(i => i.Description).filter(Boolean);
+      const title = info[0]?.Title || query;
+      const cid = info[0]?.CID;
+
+      // Prendi anche sinonimi per miglior classificazione
+      let synonyms = [];
+      if (cid) {
+        const synData = await httpGet(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/cid/${cid}/synonyms/JSON`);
+        synonyms = synData?.InformationList?.Information?.[0]?.Synonym?.slice(0, 10) || [];
+      }
+
+      return {
+        found: true,
+        source: 'PubChem',
+        name: title,
+        cid,
+        descriptions: descriptions.slice(0, 3),
+        synonyms,
+        fullText: descriptions.join(' ') + ' ' + synonyms.join(' ')
+      };
+    }
+  } catch(e) {}
+
+  // 2. Prova autocomplete
+  try {
+    const auto = await httpGet(`https://pubchem.ncbi.nlm.nih.gov/rest/autocomplete/compound/${encodeURIComponent(query)}/json?limit=5`);
+    if (auto?.dictionary_terms?.compound?.length) {
+      // Cerca il primo risultato completo
+      const firstName = auto.dictionary_terms.compound[0];
+      const desc2 = await httpGet(`https://pubchem.ncbi.nlm.nih.gov/rest/pug/compound/name/${encodeURIComponent(firstName)}/description/JSON`);
+      if (desc2?.InformationList?.Information?.length) {
+        const info = desc2.InformationList.Information;
+        const descriptions = info.map(i => i.Description).filter(Boolean);
+        return {
+          found: true,
+          source: 'PubChem',
+          name: firstName,
+          descriptions: descriptions.slice(0, 3),
+          synonyms: auto.dictionary_terms.compound,
+          fullText: descriptions.join(' ') + ' ' + auto.dictionary_terms.compound.join(' ')
+        };
+      }
+      return {
+        found: true,
+        source: 'PubChem (autocomplete)',
+        name: firstName,
+        descriptions: [],
+        synonyms: auto.dictionary_terms.compound,
+        fullText: auto.dictionary_terms.compound.join(' ')
+      };
+    }
+  } catch(e) {}
+
+  return { found: false };
+}
+
+// UniProt: identifica proteine e geni
+async function searchUniProt(query) {
+  try {
+    const data = await httpGet(`https://rest.uniprot.org/uniprotkb/search?query=${encodeURIComponent(query)}&size=3&format=json&fields=protein_name,organism_name,gene_names,cc_function`);
+    if (data?.results?.length) {
+      const results = data.results.map(r => ({
+        name: r.proteinDescription?.recommendedName?.fullName?.value ||
+              r.proteinDescription?.submissionNames?.[0]?.fullName?.value || query,
+        organism: r.organism?.scientificName || '',
+        genes: r.genes?.map(g => g.geneName?.value).filter(Boolean) || [],
+        function: r.comments?.find(c => c.commentType === 'FUNCTION')?.texts?.[0]?.value || ''
+      }));
+      return {
+        found: true,
+        source: 'UniProt',
+        results,
+        fullText: results.map(r => `${r.name} ${r.organism} ${r.genes.join(' ')} ${r.function}`).join(' ')
+      };
+    }
+  } catch(e) {}
+  return { found: false };
+}
+
+// Europe PMC: cerca pubblicazioni scientifiche menzionanti il prodotto
+async function searchEuropePMC(query) {
+  try {
+    const data = await httpGet(`https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=${encodeURIComponent(query)}&resultType=core&pageSize=3&format=json`);
+    if (data?.resultList?.result?.length) {
+      const articles = data.resultList.result;
+      const abstracts = articles.map(a => a.abstractText || '').filter(Boolean);
+      const titles = articles.map(a => a.title || '').filter(Boolean);
+      return {
+        found: true,
+        source: 'Europe PMC',
+        articles: articles.map(a => ({ title: a.title, journal: a.journalTitle })),
+        fullText: titles.join(' ') + ' ' + abstracts.join(' ')
+      };
+    }
+  } catch(e) {}
+  return { found: false };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// CLASSIFICATORE INTELLIGENTE — analizza testo scientifico → categoria Alyante
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const productClassificationRules = [
+  // Anticorpi
+  { pattern: /\b(antibod|anticorp|immunoglobulin|monoclonal|polyclonal|anti-\w+|IgG|IgM|IgA)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI - WB (Western Blot)', confidence: 8, label: 'Anticorpo' },
+  // Inibitori / composti chimici
+  { pattern: /\b(inhibitor|inibitore|antagonist|agonist|modulator|blocker|activator|compound|small molecule)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 8, label: 'Composto chimico / Inibitore' },
+  // Enzimi
+  { pattern: /\b(enzyme|enzima|polymerase|ligase|kinase|phosphatase|protease|nuclease|recombinase|transferase|helicase)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'ENZIMI: restrizione, modifica', confidence: 8, label: 'Enzima' },
+  // Kit
+  { pattern: /\b(kit|assay kit|detection kit|extraction kit|purification kit|isolation kit|elisa)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'KIT: estrazione, purificazione, luciferase assay, kit vitalita, ELISA, enrichment, depletion', confidence: 8, label: 'Kit' },
+  // Citochine / growth factors
+  { pattern: /\b(cytokine|citochin|growth factor|interleukin|chemokine|interferon|tnf|vegf|egf|fgf|bmp|tgf|pdgf)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CITOCHINE', confidence: 8, label: 'Citochina / Fattore di crescita' },
+  // siRNA / oligo / primers
+  { pattern: /\b(siRNA|shRNA|miRNA|oligonucleotide|primer|probe|antisense|morpholino|gRNA|sgRNA|crRNA)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'OLIGO', confidence: 8, label: 'Oligonucleotide' },
+  // Trasfezione
+  { pattern: /\b(transfection|lipofect|electroporation|nucleofection|transduction|viral vector|lentivir|adenovir|AAV)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'TRASFEZIONE', confidence: 8, label: 'Reagente di trasfezione' },
+  // Terreni di coltura
+  { pattern: /\b(culture media|medium|DMEM|RPMI|MEM|cell culture|serum.free)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'TERRENI: DMEM, RPMI, Alpha MEM, MEM, Iscove\'s', confidence: 7, label: 'Terreno di coltura' },
+  // Sieri
+  { pattern: /\b(serum|siero|FBS|FCS|fetal bovine)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'SIERI: FBS, FCS, dializzati, horse', confidence: 8, label: 'Siero' },
+  // PCR / qPCR
+  { pattern: /\b(PCR|qPCR|real.time|taqman|sybr|mastermix|amplification)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'PCR: taq, dye, agarosio, DNA/RNA marker', confidence: 7, label: 'Reagente PCR' },
+  // NGS
+  { pattern: /\b(NGS|next.gen|sequencing library|library prep|illumina kit|nextera|10x genomics)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'NGS: preparazione librerie, purificazione, frammentazione', confidence: 8, label: 'Reagente NGS' },
+  // Clonaggio
+  { pattern: /\b(cloning|clonagg|competent cell|plasmid|vector|gateway|gibson assembly|ligation)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CLONING: cellule competenti, kit clonaggio', confidence: 7, label: 'Reagente clonaggio' },
+  // Chimica generica (solventi)
+  { pattern: /\b(solvent|solvent|methanol|ethanol|acetone|DMSO|chloroform|buffer|solution)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - SOLVENTI', confidence: 6, label: 'Solvente / Buffer' },
+  // Reagente chimico generico (fallback per PubChem compounds)
+  { pattern: /\b(chemical|reagent|compound|molecule|drug|pharmaceutical|pharmacolog)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 6, label: 'Reagente chimico' },
+  // Animali
+  { pattern: /\b(mouse|mice|rat|animal model|in.vivo|xenograft|transgenic)\b/i,
+    famiglia: 'Animal Housing', sottofamiglia: 'Acquisto animali', confidence: 6, label: 'Modello animale' },
+  // Coloranti / fluorescenti
+  { pattern: /\b(dye|stain|fluorescen|fluorophore|chromogen|label|conjugat)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 6, label: 'Colorante / Fluoroforo' },
+];
+
+function classifyFromText(text) {
+  if (!text) return [];
+  const results = [];
+
+  for (const rule of productClassificationRules) {
+    const match = text.match(rule.pattern);
+    if (match) {
+      results.push({
+        famiglia: rule.famiglia,
+        sottofamiglia: rule.sottofamiglia,
+        confidenza: rule.confidence,
+        label: rule.label,
+        matchedTerm: match[0]
+      });
+    }
+  }
+
+  // Deduplica per sottofamiglia
+  const seen = new Set();
+  return results.filter(r => {
+    const key = `${r.famiglia}|${r.sottofamiglia}`;
+    if (seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  }).slice(0, 3);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// MOTORE DI RICERCA COMPLETO: keyword + web APIs
+// ═══════════════════════════════════════════════════════════════════════════════
+
+async function deepProductSearch(description) {
+  const startTime = Date.now();
+  const searchLog = [];
+
+  // STEP 1: Keyword matching rapido
+  const keywordResults = smartCategoryMatch(description);
+  const bestKeywordScore = keywordResults.length > 0 ? keywordResults[0].confidenza : 0;
+
+  if (bestKeywordScore >= 8) {
+    // Match diretto forte — non serve cercare online
+    return {
+      suggerimenti: keywordResults,
+      fonti: ['Database interno (match diretto)'],
+      tempo: Date.now() - startTime
+    };
+  }
+
+  // STEP 2: Ricerca parallela nei database scientifici
+  searchLog.push('Ricerca nei database scientifici...');
+
+  const [pubchem, uniprot, europmc] = await Promise.all([
+    searchPubChem(description),
+    searchUniProt(description),
+    searchEuropePMC(description)
+  ]);
+
+  const fonti = [];
+  let allText = description + ' ';
+  let productInfo = null;
+
+  // Raccogli info da PubChem
+  if (pubchem.found) {
+    fonti.push(`PubChem: ${pubchem.name}`);
+    allText += pubchem.fullText + ' ';
+    productInfo = { name: pubchem.name, source: 'PubChem', descriptions: pubchem.descriptions || [], synonyms: pubchem.synonyms || [] };
+  }
+
+  // Raccogli info da UniProt
+  if (uniprot.found) {
+    fonti.push(`UniProt: ${uniprot.results[0]?.name}`);
+    allText += uniprot.fullText + ' ';
+    if (!productInfo) {
+      productInfo = { name: uniprot.results[0]?.name, source: 'UniProt', descriptions: [uniprot.results[0]?.function], synonyms: uniprot.results[0]?.genes || [] };
+    }
+  }
+
+  // Raccogli info da Europe PMC
+  if (europmc.found) {
+    fonti.push(`Europe PMC: ${europmc.articles.length} pubblicazioni`);
+    allText += europmc.fullText + ' ';
+  }
+
+  // STEP 3: Classifica dal testo raccolto
+  const webClassification = classifyFromText(allText);
+
+  // STEP 4: Riprova keyword matching con testo arricchito
+  const enrichedKeywords = smartCategoryMatch(allText.substring(0, 500));
+
+  // STEP 5: Combina risultati — priorità a classificazione web
+  let suggerimenti = [];
+
+  if (webClassification.length > 0) {
+    suggerimenti = webClassification.map(wc => ({
+      famiglia: wc.famiglia,
+      sottofamiglia: wc.sottofamiglia,
+      confidenza: wc.confidenza,
+      spiegazione: productInfo
+        ? `Prodotto identificato: ${productInfo.name} (${productInfo.source}). Tipo: ${wc.label}. ${productInfo.descriptions?.[0]?.substring(0, 150) || ''}`
+        : `Classificazione: ${wc.label} (da letteratura scientifica)`
+    }));
+  }
+
+  // Aggiungi risultati da keyword arricchito se utili
+  if (enrichedKeywords.length > 0 && enrichedKeywords[0].confidenza > bestKeywordScore) {
+    for (const ek of enrichedKeywords) {
+      if (!suggerimenti.find(s => s.sottofamiglia === ek.sottofamiglia)) {
+        suggerimenti.push({
+          ...ek,
+          spiegazione: productInfo
+            ? `Match arricchito con dati PubChem/UniProt: ${productInfo.name}. ${ek.spiegazione}`
+            : ek.spiegazione
+        });
+      }
+    }
+  }
+
+  // Aggiungi keyword originali come fallback
+  if (keywordResults.length > 0 && suggerimenti.length < 3) {
+    for (const kr of keywordResults) {
+      if (!suggerimenti.find(s => s.sottofamiglia === kr.sottofamiglia)) {
+        suggerimenti.push(kr);
+      }
+    }
+  }
+
+  // Se PubChem ha trovato il composto ma nessuna classificazione è scattata
+  if (suggerimenti.length === 0 && pubchem.found) {
+    suggerimenti.push({
+      famiglia: 'Lab Reagents',
+      sottofamiglia: 'CHEMICALS - POLVERI',
+      confidenza: 7,
+      spiegazione: `Composto chimico identificato su PubChem: ${pubchem.name}. ${pubchem.descriptions?.[0]?.substring(0, 150) || ''}`
+    });
+  }
+
+  if (suggerimenti.length === 0 && uniprot.found) {
+    suggerimenti.push({
+      famiglia: 'Lab Reagents',
+      sottofamiglia: 'ANTICORPI - WB (Western Blot)',
+      confidenza: 6,
+      spiegazione: `Proteina identificata su UniProt: ${uniprot.results[0]?.name}. Potrebbe essere un target per anticorpi.`
+    });
+  }
+
+  return {
+    suggerimenti: suggerimenti.slice(0, 3),
+    fonti: fonti.length ? fonti : ['Nessun risultato trovato nei database scientifici'],
+    productInfo,
+    tempo: Date.now() - startTime
+  };
+}
 
 // ═══════════════════════════════════════════════════════════════════════════════
 // DATI — Categorie merceologiche Alyante
@@ -549,15 +887,45 @@ app.get('/api/stats', (req, res) => {
 
 app.get('/api/categories', (req, res) => res.json(categories));
 
-// Smart Category Matcher
-app.post('/api/categories/match', (req, res) => {
+// Deep Category Matcher — ricerca nei database scientifici
+app.post('/api/categories/match', async (req, res) => {
   const { description } = req.body;
   if (!description?.trim()) return res.status(400).json({ error: 'Descrizione richiesta' });
-  const suggerimenti = smartCategoryMatch(description);
-  if (suggerimenti.length === 0) {
-    return res.json({ suggerimenti: [{ famiglia: 'N/A', sottofamiglia: 'Nessuna corrispondenza trovata', confidenza: 0, spiegazione: 'Prova con termini piu specifici del prodotto' }] });
+
+  try {
+    const result = await deepProductSearch(description);
+
+    if (result.suggerimenti.length === 0) {
+      return res.json({
+        suggerimenti: [{
+          famiglia: 'N/A',
+          sottofamiglia: 'Nessuna corrispondenza trovata',
+          confidenza: 0,
+          spiegazione: 'Prodotto non trovato nei database scientifici (PubChem, UniProt, Europe PMC). Prova con il nome completo del prodotto.'
+        }],
+        fonti: result.fonti,
+        tempo: result.tempo
+      });
+    }
+
+    res.json({
+      suggerimenti: result.suggerimenti,
+      fonti: result.fonti,
+      productInfo: result.productInfo,
+      tempo: result.tempo
+    });
+  } catch (err) {
+    console.error('Search error:', err.message);
+    // Fallback a keyword matching
+    const suggerimenti = smartCategoryMatch(description);
+    res.json({
+      suggerimenti: suggerimenti.length ? suggerimenti : [{
+        famiglia: 'N/A', sottofamiglia: 'Errore nella ricerca', confidenza: 0,
+        spiegazione: 'Errore durante la ricerca nei database. Risultato basato solo su keyword matching.'
+      }],
+      fonti: ['Fallback: solo keyword matching (errore connessione database)']
+    });
   }
-  res.json({ suggerimenti });
 });
 
 // Distributors

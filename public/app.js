@@ -22,14 +22,28 @@ function closeModal() {
   $('modal').classList.remove('open');
 }
 
-// ── Category Matcher (AI) ──
+// ── Category Matcher — Ricerca scientifica profonda ──
 async function matchCategory() {
   const desc = $('cat-input').value.trim();
   if (!desc) return;
 
   const btn = $('cat-btn');
   btn.disabled = true;
-  $('cat-results').innerHTML = '<div class="loading">Analisi in corso...</div>';
+  btn.textContent = 'Ricerca in corso...';
+  $('cat-results').innerHTML = `
+    <div class="loading">
+      <div class="search-progress">
+        <div class="progress-step active" id="step-db">🔍 Ricerca nel database interno...</div>
+        <div class="progress-step" id="step-pubchem">🧪 Interrogazione PubChem...</div>
+        <div class="progress-step" id="step-uniprot">🧬 Interrogazione UniProt...</div>
+        <div class="progress-step" id="step-pmc">📚 Ricerca letteratura scientifica...</div>
+      </div>
+    </div>`;
+
+  // Anima i passi
+  setTimeout(() => { const el = $('step-pubchem'); if (el) el.classList.add('active'); }, 500);
+  setTimeout(() => { const el = $('step-uniprot'); if (el) el.classList.add('active'); }, 1500);
+  setTimeout(() => { const el = $('step-pmc'); if (el) el.classList.add('active'); }, 2500);
 
   try {
     const resp = await fetch('/api/categories/match', {
@@ -44,7 +58,27 @@ async function matchCategory() {
       return;
     }
 
-    const html = (data.suggerimenti || []).map(s => {
+    // Mostra fonti di ricerca
+    let fontiHtml = '';
+    if (data.fonti?.length) {
+      fontiHtml = `<div class="search-sources">
+        <strong>Fonti consultate:</strong> ${data.fonti.join(' • ')}
+        ${data.tempo ? `<span class="search-time">(${data.tempo}ms)</span>` : ''}
+      </div>`;
+    }
+
+    // Mostra info prodotto se identificato
+    let productHtml = '';
+    if (data.productInfo) {
+      productHtml = `<div class="product-info-card">
+        <div class="product-name">📋 Prodotto identificato: <strong>${data.productInfo.name}</strong></div>
+        <div class="product-source">Fonte: ${data.productInfo.source}</div>
+        ${data.productInfo.descriptions?.[0] ? `<div class="product-desc">${data.productInfo.descriptions[0].substring(0, 250)}${data.productInfo.descriptions[0].length > 250 ? '...' : ''}</div>` : ''}
+        ${data.productInfo.synonyms?.length ? `<div class="product-synonyms">Sinonimi: ${data.productInfo.synonyms.slice(0, 5).join(', ')}</div>` : ''}
+      </div>`;
+    }
+
+    const cardsHtml = (data.suggerimenti || []).map(s => {
       const confClass = s.confidenza >= 8 ? 'conf-high' : s.confidenza >= 5 ? 'conf-med' : 'conf-low';
       return `<div class="ai-card">
         <div class="famiglia">${s.famiglia}</div>
@@ -54,11 +88,12 @@ async function matchCategory() {
       </div>`;
     }).join('');
 
-    $('cat-results').innerHTML = html || '<div class="empty-state">Nessun suggerimento trovato</div>';
+    $('cat-results').innerHTML = fontiHtml + productHtml + cardsHtml || '<div class="empty-state">Nessun suggerimento trovato</div>';
   } catch (err) {
     $('cat-results').innerHTML = `<div class="ai-card" style="border-color:var(--danger)"><p>Errore: ${err.message}</p></div>`;
   } finally {
     btn.disabled = false;
+    btn.textContent = 'Cerca categoria';
   }
 }
 

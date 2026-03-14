@@ -32,9 +32,9 @@
       <!-- PAGE: Categorie Alyante -->
       <section class="page active" id="page-categorie">
         <h1>Categorie Merceologiche Alyante</h1>
-        <p class="subtitle">Inserisci la descrizione di un prodotto o servizio per trovare la categoria corretta.</p>
+        <p class="subtitle">Inserisci il nome o codice prodotto. Il sistema cerca in PubChem, UniProt e letteratura scientifica per identificare il prodotto e suggerire la categoria corretta.</p>
         <div class="search-box">
-          <input type="text" id="cat-input" placeholder="Es: puntali con filtro 200ul, anticorpo anti-GFP, sequenziamento..." />
+          <input type="text" id="cat-input" placeholder="Es: SAR405, Lipofectamine, anti-GFP antibody, Trizol, puntali..." />
           <button id="cat-btn" onclick="matchCategory()">Cerca categoria</button>
         </div>
         <div id="cat-results" class="results-area"></div>

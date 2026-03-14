@@ -261,18 +261,90 @@ h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
   padding: 2rem;
   color: var(--text-light);
 }
-.loading::after {
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Search Progress Steps ── */
+.search-progress {
+  text-align: left;
+  max-width: 400px;
+  margin: 0 auto;
+}
+.progress-step {
+  padding: 0.5rem 0.8rem;
+  margin: 0.3rem 0;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  color: var(--text-light);
+  opacity: 0.4;
+  transition: all 0.4s ease;
+}
+.progress-step.active {
+  opacity: 1;
+  color: var(--primary);
+  background: var(--primary-light);
+  font-weight: 500;
+}
+.progress-step.active::after {
   content: '';
   display: inline-block;
-  width: 20px; height: 20px;
-  border: 3px solid var(--border);
+  width: 14px; height: 14px;
+  border: 2px solid var(--border);
   border-top-color: var(--primary);
   border-radius: 50%;
   animation: spin 0.8s linear infinite;
   margin-left: 0.5rem;
   vertical-align: middle;
 }
-@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── Product Info Card (from web search) ── */
+.product-info-card {
+  background: linear-gradient(135deg, #e8f4fd, #f0f9ff);
+  border: 1px solid #b3d9f2;
+  border-radius: var(--radius);
+  padding: 1.2rem 1.5rem;
+  margin-bottom: 1rem;
+}
+.product-name {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: var(--primary);
+  margin-bottom: 0.3rem;
+}
+.product-source {
+  font-size: 0.8rem;
+  color: var(--text-light);
+  margin-bottom: 0.5rem;
+}
+.product-desc {
+  font-size: 0.88rem;
+  color: var(--text);
+  line-height: 1.5;
+  margin-bottom: 0.4rem;
+}
+.product-synonyms {
+  font-size: 0.82rem;
+  color: var(--text-light);
+  font-style: italic;
+}
+
+/* ── Search Sources ── */
+.search-sources {
+  background: var(--accent-light);
+  border: 1px solid #b2dfdb;
+  border-radius: 8px;
+  padding: 0.7rem 1rem;
+  margin-bottom: 1rem;
+  font-size: 0.85rem;
+  color: #00695c;
+}
+.search-sources strong {
+  color: #004d40;
+}
+.search-time {
+  float: right;
+  color: var(--text-light);
+  font-size: 0.8rem;
+}
 
 /* ── Modal ── */
 .modal-overlay {

@@ -29,7 +29,7 @@ async function matchCategory() {
 
   const btn = $('cat-btn');
   btn.disabled = true;
-  $('cat-results').innerHTML = '<div class="loading">Analisi AI in corso...</div>';
+  $('cat-results').innerHTML = '<div class="loading">Analisi in corso...</div>';
 
   try {
     const resp = await fetch('/api/categories/match', {
@@ -177,7 +177,7 @@ async function searchBrand() {
     const data = await resp.json();
 
     if (!data.trovati?.length) {
-      $('brand-results').innerHTML = `<div class="empty-state">Nessun distributore trovato per "${q}".<br>Prova con Alternative Hunter!</div>`;
+      $('brand-results').innerHTML = `<div class="empty-state">Nessun distributore trovato per "${q}".<br>Prova con Cerca Distributore!</div>`;
       return;
     }
 
@@ -197,15 +197,15 @@ async function searchBrand() {
 
 $('brand-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') searchBrand(); });
 
-// ── Alternative Hunter ──
-async function findAlternatives() {
+// ── Cerca Distributore ──
+async function cercaDistributore() {
   const brand = $('alt-input').value.trim();
   if (!brand) return;
 
-  $('alt-results').innerHTML = '<div class="loading">Cercando alternative...</div>';
+  $('alt-results').innerHTML = '<div class="loading">Cercando distributori...</div>';
 
   try {
-    const resp = await fetch('/api/alternative-hunter', {
+    const resp = await fetch('/api/cerca-distributore', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ brand })
@@ -223,24 +223,15 @@ async function findAlternatives() {
         </div>
       `).join('');
       $('alt-results').innerHTML = html;
-    } else if (data.tipo === 'ai_alternative' && data.alternative?.length) {
-      let html = `<h3 style="margin-bottom:1rem">Brand "${brand}" non trovato. Suggerimenti AI:</h3>`;
-      html += data.alternative.map(a => `
-        <div class="ai-card">
-          <div class="famiglia">${a.brand}</div>
-          <div class="spiegazione">${a.motivo}</div>
-        </div>
-      `).join('');
-      $('alt-results').innerHTML = html;
     } else {
-      $('alt-results').innerHTML = '<div class="empty-state">Nessun risultato trovato.</div>';
+      $('alt-results').innerHTML = `<div class="empty-state">Nessun distributore trovato per "${brand}".<br>Verifica il nome del brand e riprova.</div>`;
     }
   } catch (err) {
     $('alt-results').innerHTML = `<div class="empty-state">Errore: ${err.message}</div>`;
   }
 }
 
-$('alt-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') findAlternatives(); });
+$('alt-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') cercaDistributore(); });
 
 // ── Init ──
 loadCategoryTree();

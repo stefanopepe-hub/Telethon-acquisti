@@ -1577,11 +1577,13 @@ app.get('/api/distributors', (req, res) => {
 
 app.get('/api/distributors/:nome/brands', (req, res) => {
   const nome = req.params.nome.toLowerCase();
+  const nomeClean = nome.replace(/[.\-,\s]+/g, ''); // "s.i.a.l. s.r.l." -> "sial srl" -> "sialsrl"
   const dist = distributors.find(d => d.nome.toLowerCase().includes(nome));
-  // Match bidirezionale: il nome del distributore nei brands può essere abbreviato
+  // Match robusto: normalizza rimuovendo punti, trattini, spazi
   const brands = distributorBrands.filter(b => {
     const bn = b.distributore.toLowerCase();
-    return bn.includes(nome) || nome.includes(bn);
+    const bnClean = bn.replace(/[.\-,\s]+/g, '');
+    return bn.includes(nome) || nome.includes(bn) || bnClean.includes(nomeClean) || nomeClean.includes(bnClean);
   });
   res.json({ condizioni: dist || null, brands });
 });

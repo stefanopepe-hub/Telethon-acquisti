@@ -150,6 +150,58 @@ h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
 .conf-high { background: #d4edda; color: #155724; }
 .conf-med { background: #fff3cd; color: #856404; }
 .conf-low { background: #f8d7da; color: #721c24; }
+.codice-badge {
+  display: inline-block;
+  background: var(--accent);
+  color: white;
+  padding: 0.1rem 0.5rem;
+  border-radius: 12px;
+  font-size: 0.8rem;
+  font-weight: 700;
+  margin-right: 0.3rem;
+  vertical-align: middle;
+}
+
+/* ── Card layout improvements ── */
+.ai-card .card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+.ai-card.top-result {
+  border-left: 4px solid var(--accent);
+  background: linear-gradient(135deg, #f0f9ff 0%, #ffffff 100%);
+}
+
+/* ── Quick Tags ── */
+.quick-tags {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-top: 0.7rem;
+  font-size: 0.85rem;
+}
+.quick-tags > span {
+  color: var(--text-light);
+  font-weight: 500;
+  margin-right: 0.3rem;
+}
+.quick-tag {
+  background: var(--bg-light);
+  border: 1px solid #ddd;
+  padding: 0.25rem 0.7rem;
+  border-radius: 20px;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: var(--primary);
+  transition: all 0.15s;
+}
+.quick-tag:hover {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+}
 
 /* ── Category Tree ── */
 .cat-tree {}
@@ -188,6 +240,11 @@ h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
   font-size: 0.9rem;
 }
 .cat-item:last-child { border-bottom: none; }
+.cat-item strong {
+  color: var(--primary);
+  margin-right: 0.3rem;
+  font-size: 0.85rem;
+}
 
 /* ── Card Grid ── */
 .card-grid {

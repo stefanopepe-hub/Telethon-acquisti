@@ -1,4 +1,4 @@
-// TIGEM Acquisti Tool - Frontend
+// Fondazione Telethon - Tool Acquisti - Frontend
 const $ = id => document.getElementById(id);
 
 // ── Navigation ──
@@ -22,7 +22,13 @@ function closeModal() {
   $('modal').classList.remove('open');
 }
 
-// ── Category Matcher — Ricerca scientifica profonda ──
+// ── Quick Search Tags per Categorie ──
+function quickSearch(term) {
+  $('cat-input').value = term;
+  matchCategory();
+}
+
+// ── Category Matcher — Ricerca intelligente ──
 async function matchCategory() {
   const desc = $('cat-input').value.trim();
   if (!desc) return;
@@ -33,17 +39,17 @@ async function matchCategory() {
   $('cat-results').innerHTML = `
     <div class="loading">
       <div class="search-progress">
-        <div class="progress-step active" id="step-db">🔍 Ricerca nel database interno...</div>
-        <div class="progress-step" id="step-pubchem">🧪 Interrogazione PubChem...</div>
-        <div class="progress-step" id="step-uniprot">🧬 Interrogazione UniProt...</div>
+        <div class="progress-step active" id="step-db">🔍 Analisi nel database interno...</div>
+        <div class="progress-step" id="step-pubchem">🧪 Ricerca su PubChem...</div>
+        <div class="progress-step" id="step-uniprot">🧬 Ricerca su UniProt...</div>
         <div class="progress-step" id="step-pmc">📚 Ricerca letteratura scientifica...</div>
       </div>
     </div>`;
 
   // Anima i passi
-  setTimeout(() => { const el = $('step-pubchem'); if (el) el.classList.add('active'); }, 500);
-  setTimeout(() => { const el = $('step-uniprot'); if (el) el.classList.add('active'); }, 1500);
-  setTimeout(() => { const el = $('step-pmc'); if (el) el.classList.add('active'); }, 2500);
+  setTimeout(() => { const el = $('step-pubchem'); if (el) el.classList.add('active'); }, 400);
+  setTimeout(() => { const el = $('step-uniprot'); if (el) el.classList.add('active'); }, 1200);
+  setTimeout(() => { const el = $('step-pmc'); if (el) el.classList.add('active'); }, 2000);
 
   try {
     const resp = await fetch('/api/categories/match', {
@@ -62,7 +68,7 @@ async function matchCategory() {
     let fontiHtml = '';
     if (data.fonti?.length) {
       fontiHtml = `<div class="search-sources">
-        <strong>Fonti consultate:</strong> ${data.fonti.join(' • ')}
+        <strong>📡 Fonti:</strong> ${data.fonti.join(' • ')}
         ${data.tempo ? `<span class="search-time">(${data.tempo}ms)</span>` : ''}
       </div>`;
     }
@@ -71,24 +77,27 @@ async function matchCategory() {
     let productHtml = '';
     if (data.productInfo) {
       productHtml = `<div class="product-info-card">
-        <div class="product-name">📋 Prodotto identificato: <strong>${data.productInfo.name}</strong></div>
+        <div class="product-name">🔬 Prodotto identificato: <strong>${data.productInfo.name}</strong></div>
         <div class="product-source">Fonte: ${data.productInfo.source}</div>
         ${data.productInfo.descriptions?.[0] ? `<div class="product-desc">${data.productInfo.descriptions[0].substring(0, 250)}${data.productInfo.descriptions[0].length > 250 ? '...' : ''}</div>` : ''}
         ${data.productInfo.synonyms?.length ? `<div class="product-synonyms">Sinonimi: ${data.productInfo.synonyms.slice(0, 5).join(', ')}</div>` : ''}
       </div>`;
     }
 
-    const cardsHtml = (data.suggerimenti || []).map(s => {
+    const cardsHtml = (data.suggerimenti || []).map((s, i) => {
       const confClass = s.confidenza >= 8 ? 'conf-high' : s.confidenza >= 5 ? 'conf-med' : 'conf-low';
-      return `<div class="ai-card">
-        <div class="famiglia">${s.famiglia}</div>
+      const isTop = i === 0 ? ' top-result' : '';
+      return `<div class="ai-card${isTop}">
+        <div class="card-header">
+          <div class="famiglia">${s.codice ? `<span class="codice-badge">${s.codice}</span> ` : ''}${s.famiglia}</div>
+          <span class="confidenza ${confClass}">${s.confidenza}/10</span>
+        </div>
         <div class="sottofamiglia">${s.sottofamiglia}</div>
         <div class="spiegazione">${s.spiegazione || ''}</div>
-        <span class="confidenza ${confClass}">Confidenza: ${s.confidenza}/10</span>
       </div>`;
     }).join('');
 
-    $('cat-results').innerHTML = fontiHtml + productHtml + cardsHtml || '<div class="empty-state">Nessun suggerimento trovato</div>';
+    $('cat-results').innerHTML = fontiHtml + productHtml + (cardsHtml || '<div class="empty-state">Nessun suggerimento trovato. Prova con un nome prodotto o codice diverso.</div>');
   } catch (err) {
     $('cat-results').innerHTML = `<div class="ai-card" style="border-color:var(--danger)"><p>Errore: ${err.message}</p></div>`;
   } finally {
@@ -116,11 +125,11 @@ async function loadCategoryTree() {
     for (const [famiglia, items] of Object.entries(grouped)) {
       html += `<div class="cat-family">
         <div class="cat-family-header" onclick="this.nextElementSibling.classList.toggle('open')">
-          <span>${famiglia}</span>
+          <span>${items[0]?.codice?.split('.')[0] || ''} - ${famiglia}</span>
           <span class="badge">${items.length}</span>
         </div>
         <div class="cat-items">
-          ${items.map(i => `<div class="cat-item">${i.sottofamiglia}</div>`).join('')}
+          ${items.map(i => `<div class="cat-item"><strong>${i.codice}</strong> — ${i.sottofamiglia}</div>`).join('')}
         </div>
       </div>`;
     }

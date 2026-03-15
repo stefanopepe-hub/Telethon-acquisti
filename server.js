@@ -140,54 +140,60 @@ async function searchEuropePMC(query) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const productClassificationRules = [
-  // Anticorpi
+  // Anticorpi → 6.8 ANTICORPI
   { pattern: /\b(antibod|anticorp|immunoglobulin|monoclonal|polyclonal|anti-\w+|IgG|IgM|IgA)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI - WB (Western Blot)', confidence: 8, label: 'Anticorpo' },
-  // Inibitori / composti chimici
+    famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI', confidence: 8, label: 'Anticorpo' },
+  // Inibitori / composti chimici → 6.9 CHEMICALS
   { pattern: /\b(inhibitor|inibitore|antagonist|agonist|modulator|blocker|activator|compound|small molecule)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 8, label: 'Composto chimico / Inibitore' },
-  // Enzimi (priorità alta — match diretto su nome prodotto)
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS', confidence: 8, label: 'Composto chimico / Inibitore' },
+  // Enzimi → 6.2 Molecular Biology
   { pattern: /\b(enzyme|enzima|polymerase|ligase|kinase|phosphatase|protease|nuclease|recombinase|transferase|helicase|dnase|rnase|deoxyribonuclease|ribonuclease|endonuclease|exonuclease|topoisomerase|reverse transcriptase|caspase|collagenase|trypsin|dispase|luciferase)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'ENZIMI: restrizione, modifica (Molecular Biology)', confidence: 9, label: 'Enzima' },
-  // Kit
+    famiglia: 'Lab Reagents', sottofamiglia: 'Molecular Biology', confidence: 9, label: 'Enzima / Molecular Biology' },
+  // Kit → 6.1
   { pattern: /\b(kit|assay kit|detection kit|extraction kit|purification kit|isolation kit|elisa)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'KIT: estrazione, purificazione, luciferase assay, kit vitalita, ELISA, enrichment, depletion', confidence: 8, label: 'Kit' },
-  // Citochine / growth factors
+    famiglia: 'Lab Reagents', sottofamiglia: 'KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.', confidence: 8, label: 'Kit' },
+  // Citochine / growth factors → 6.6
   { pattern: /\b(cytokine|citochin|growth factor|interleukin|chemokine|interferon|tnf|vegf|egf|fgf|bmp|tgf|pdgf)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'CITOCHINE', confidence: 8, label: 'Citochina / Fattore di crescita' },
-  // siRNA / oligo / primers
+    famiglia: 'Lab Reagents', sottofamiglia: 'CITOCHINE e fattori di crescita', confidence: 8, label: 'Citochina / Fattore di crescita' },
+  // siRNA / oligo / primers → 6.4 Synthesis
   { pattern: /\b(siRNA|shRNA|miRNA|oligonucleotide|primer|probe|antisense|morpholino|gRNA|sgRNA|crRNA)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'OLIGO', confidence: 8, label: 'Oligonucleotide' },
-  // Trasfezione
+    famiglia: 'Lab Reagents', sottofamiglia: 'Synthesis: oligos, siRNA, peptide, plasmids, genes', confidence: 8, label: 'Oligonucleotide / Sintesi' },
+  // Trasfezione → 6.5 Cell Biology
   { pattern: /\b(transfection|lipofect|electroporation|nucleofection|transduction|viral vector|lentivir|adenovir|AAV)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'TRASFEZIONE', confidence: 8, label: 'Reagente di trasfezione' },
-  // Terreni di coltura
+    famiglia: 'Lab Reagents', sottofamiglia: 'Cell Biology', confidence: 8, label: 'Reagente di trasfezione / Cell Biology' },
+  // Terreni di coltura → 6.5 Cell Biology
   { pattern: /\b(culture media|medium|DMEM|RPMI|MEM|cell culture|serum.free)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'TERRENI: DMEM, RPMI, Alpha MEM, MEM, Iscove\'s', confidence: 7, label: 'Terreno di coltura' },
-  // Sieri
+    famiglia: 'Lab Reagents', sottofamiglia: 'Cell Biology', confidence: 7, label: 'Terreno di coltura / Cell Biology' },
+  // Sieri → 6.5 Cell Biology
   { pattern: /\b(serum|siero|FBS|FCS|fetal bovine)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'SIERI: FBS, FCS, dializzati, horse', confidence: 8, label: 'Siero' },
-  // PCR / qPCR
+    famiglia: 'Lab Reagents', sottofamiglia: 'Cell Biology', confidence: 8, label: 'Siero / Cell Biology' },
+  // PCR / qPCR → 6.2 Molecular Biology
   { pattern: /\b(PCR|qPCR|real.time|taqman|sybr|mastermix|amplification)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'PCR: taq, dye, agarosio, DNA/RNA marker', confidence: 7, label: 'Reagente PCR' },
-  // NGS
+    famiglia: 'Lab Reagents', sottofamiglia: 'Molecular Biology', confidence: 7, label: 'Reagente PCR / Molecular Biology' },
+  // NGS → 6.3
   { pattern: /\b(NGS|next.gen|sequencing library|library prep|illumina kit|nextera|10x genomics)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'NGS: preparazione librerie, purificazione, frammentazione', confidence: 8, label: 'Reagente NGS' },
-  // Clonaggio
+    famiglia: 'Lab Reagents', sottofamiglia: 'NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.', confidence: 8, label: 'Reagente NGS' },
+  // Clonaggio → 6.2 Molecular Biology
   { pattern: /\b(cloning|clonagg|competent cell|plasmid|vector|gateway|gibson assembly|ligation)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'CLONING: cellule competenti, kit clonaggio', confidence: 7, label: 'Reagente clonaggio' },
-  // Chimica generica (solventi)
-  { pattern: /\b(solvent|solvent|methanol|ethanol|acetone|DMSO|chloroform|buffer|solution)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - SOLVENTI', confidence: 6, label: 'Solvente / Buffer' },
-  // Reagente chimico generico (fallback per PubChem compounds)
+    famiglia: 'Lab Reagents', sottofamiglia: 'Molecular Biology', confidence: 7, label: 'Reagente clonaggio / Molecular Biology' },
+  // Chimica generica (solventi) → 6.9 CHEMICALS
+  { pattern: /\b(solvent|methanol|ethanol|acetone|DMSO|chloroform|buffer|solution)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS', confidence: 6, label: 'Solvente / Buffer' },
+  // Reagente chimico generico → 6.9 CHEMICALS
   { pattern: /\b(chemical|reagent|compound|molecule|drug|pharmaceutical|pharmacolog)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 6, label: 'Reagente chimico' },
-  // Animali
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS', confidence: 6, label: 'Reagente chimico' },
+  // Animali → 7.1
   { pattern: /\b(mouse|mice|rat|animal model|in.vivo|xenograft|transgenic)\b/i,
-    famiglia: 'Animal Housing', sottofamiglia: 'Acquisto animali', confidence: 6, label: 'Modello animale' },
-  // Coloranti / fluorescenti
+    famiglia: 'Animal housing', sottofamiglia: 'ACQUISTO ANIMALI', confidence: 6, label: 'Modello animale' },
+  // Coloranti / fluorescenti → 6.9 CHEMICALS
   { pattern: /\b(dye|stain|fluorescen|fluorophore|chromogen|label|conjugat)\b/i,
-    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI', confidence: 6, label: 'Colorante / Fluoroforo' },
+    famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS', confidence: 6, label: 'Colorante / Fluoroforo' },
+  // Histology → 6.13
+  { pattern: /\b(histolog|istolog|paraffin|microtom|ematossil|eosin|embedding|cryostat)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'Histology', confidence: 7, label: 'Istologia' },
+  // Protein → 6.7
+  { pattern: /\b(protein purif|western blot|bradford|bca|page|electrophoresis|proteom)\b/i,
+    famiglia: 'Lab Reagents', sottofamiglia: 'Protein', confidence: 7, label: 'Proteina / Proteomica' },
 ];
 
 function classifyFromText(text) {
@@ -236,22 +242,62 @@ function validatePubChemResult(query, pubchemName) {
   return common / Math.max(qChars.size, 1) > 0.6;
 }
 
+// Lista di termini comuni italiani/lab che NON devono essere cercati su PubChem
+const commonLabTerms = new Set([
+  'guanti', 'guanto', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari',
+  'puntali', 'puntale', 'tips', 'tip', 'pipetta', 'pipette', 'micropipetta',
+  'provetta', 'provette', 'tubi', 'tubes', 'falcon', 'eppendorf',
+  'petri', 'piastra', 'piastre', 'multiwell', 'fiasca', 'fiasche', 'flask',
+  'vetrino', 'vetrini', 'slides', 'coprioggetto', 'portaoggetto',
+  'scraper', 'strainer', 'stericup', 'steritop', 'cryovial', 'criovial',
+  'cuvetta', 'cuvette', 'stripette',
+  'biohazard', 'rifiuti', 'buste', 'sacchetti',
+  'cryobox', 'parafilm', 'rack', 'box',
+  'nastro', 'carta', 'spruzzetta', 'siringa', 'siringhe', 'ago', 'aghi', 'lama', 'lame',
+  'ansa', 'detergente', 'alcool', 'sapone',
+  'penna', 'toner', 'cancelleria', 'busta',
+  'microscopio', 'centrifuga', 'vortex', 'bilancia', 'incubatore', 'autoclave',
+  'freezer', 'frigorifero', 'bagnetto', 'stufa', 'termociclatore',
+  'laptop', 'computer', 'stampante', 'monitor', 'mouse', 'tastiera',
+  'gabbia', 'lettiera', 'mangime', 'bedding',
+  'bottiglia', 'beuta', 'beute', 'duran',
+  'ghiaccio secco', 'azoto liquido', 'bombola', 'gas',
+  'dpi', 'protezione', 'sicurezza',
+  'terreno', 'terreni', 'medium', 'media',
+  'siero', 'sieri', 'serum',
+  'marker', 'ladder', 'agarosio', 'agarose',
+]);
+
+// Verifica se l'input è un termine comune di laboratorio (non scientifico)
+function isCommonLabTerm(query) {
+  const q = query.toLowerCase().trim();
+  const words = q.split(/[\s,.\-\/()]+/).filter(w => w.length > 1);
+  // Se ALMENO una parola è un termine comune, è probabilmente una ricerca di materiale
+  return words.some(w => commonLabTerms.has(w));
+}
+
+// Helper: trova il codice categoria dato famiglia+sottofamiglia
+function findCodice(famiglia, sottofamiglia) {
+  const cat = categories.find(c => c.famiglia === famiglia && c.sottofamiglia === sottofamiglia);
+  return cat?.codice || '';
+}
+
 async function deepProductSearch(description) {
   const startTime = Date.now();
 
   // STEP 0: Classifica l'input dell'utente DIRETTAMENTE con le regole
-  // Questo cattura nomi come "Deoxyribonuclease" → enzima, SENZA bisogno di PubChem
   const directClassification = classifyFromText(description);
 
-  // STEP 1: Keyword matching rapido
+  // STEP 1: Keyword matching rapido nel dizionario categorie
   const keywordResults = smartCategoryMatch(description);
   const bestKeywordScore = keywordResults.length > 0 ? keywordResults[0].confidenza : 0;
 
-  // Se classificazione diretta è forte, restituisci subito
+  // Se classificazione diretta è forte (enzimi, anticorpi specifici, ecc)
   if (directClassification.length > 0 && directClassification[0].confidenza >= 9) {
     const best = directClassification[0];
     return {
       suggerimenti: [{
+        codice: findCodice(best.famiglia, best.sottofamiglia),
         famiglia: best.famiglia,
         sottofamiglia: best.sottofamiglia,
         confidenza: best.confidenza,
@@ -262,6 +308,18 @@ async function deepProductSearch(description) {
     };
   }
 
+  // STEP 1b: Se il keyword match è buono (>=6) E il termine è comune di laboratorio,
+  // restituisci subito SENZA cercare su PubChem (evita "guanti" → "Guanine")
+  const isCommon = isCommonLabTerm(description);
+  if (bestKeywordScore >= 6 && isCommon) {
+    return {
+      suggerimenti: keywordResults,
+      fonti: ['Database interno categorie'],
+      tempo: Date.now() - startTime
+    };
+  }
+
+  // Se il keyword match è molto forte, restituisci subito
   if (bestKeywordScore >= 8) {
     return {
       suggerimenti: keywordResults,
@@ -270,7 +328,32 @@ async function deepProductSearch(description) {
     };
   }
 
-  // STEP 2: Ricerca parallela nei database scientifici
+  // Se è un termine comune ma il match non è forte, prova comunque a dare un risultato interno
+  // NON cercare su PubChem per termini comuni italiani
+  if (isCommon && bestKeywordScore >= 5) {
+    // Combina keyword + classificazione diretta
+    const combined = keywordResults.slice();
+    for (const dc of directClassification) {
+      if (!combined.find(c => c.sottofamiglia === dc.sottofamiglia)) {
+        combined.push({
+          codice: findCodice(dc.famiglia, dc.sottofamiglia),
+          famiglia: dc.famiglia,
+          sottofamiglia: dc.sottofamiglia,
+          confidenza: dc.confidenza,
+          spiegazione: `Classificazione: ${dc.label}`
+        });
+      }
+    }
+    if (combined.length > 0) {
+      return {
+        suggerimenti: combined.slice(0, 3),
+        fonti: ['Database interno categorie'],
+        tempo: Date.now() - startTime
+      };
+    }
+  }
+
+  // STEP 2: Ricerca parallela nei database scientifici (solo per termini scientifici/codici)
   const [pubchem, uniprot, europmc] = await Promise.all([
     searchPubChem(description),
     searchUniProt(description),
@@ -287,7 +370,6 @@ async function deepProductSearch(description) {
     primaryText += (pubchem.descriptions || []).join(' ') + ' ' + (pubchem.synonyms || []).join(' ') + ' ';
     productInfo = { name: pubchem.name, source: 'PubChem', descriptions: pubchem.descriptions || [], synonyms: pubchem.synonyms || [] };
   } else if (pubchem.found) {
-    // PubChem ha trovato qualcosa ma non corrisponde — segnala ma non usare per classificazione
     fonti.push(`PubChem: trovato "${pubchem.name}" (non corrisponde esattamente)`);
   }
 
@@ -306,18 +388,19 @@ async function deepProductSearch(description) {
   // STEP 3: Classifica dal testo primario (input utente + PubChem validato + UniProt)
   const primaryClassification = classifyFromText(primaryText);
 
-  // STEP 4: Usa classificazione diretta se PubChem non ha aggiunto nulla di meglio
+  // STEP 4: Scegli la migliore classificazione
   let bestClassification = primaryClassification;
   if (directClassification.length > 0 && (primaryClassification.length === 0 || directClassification[0].confidenza >= primaryClassification[0].confidenza)) {
     bestClassification = directClassification;
   }
 
-  // STEP 5: Costruisci suggerimenti
+  // STEP 5: Costruisci suggerimenti — combina tutte le fonti
   let suggerimenti = [];
 
   if (bestClassification.length > 0) {
     const best = bestClassification[0];
     suggerimenti.push({
+      codice: findCodice(best.famiglia, best.sottofamiglia),
       famiglia: best.famiglia,
       sottofamiglia: best.sottofamiglia,
       confidenza: best.confidenza,
@@ -330,6 +413,7 @@ async function deepProductSearch(description) {
       const sec = bestClassification[i];
       if (sec.sottofamiglia !== best.sottofamiglia) {
         suggerimenti.push({
+          codice: findCodice(sec.famiglia, sec.sottofamiglia),
           famiglia: sec.famiglia,
           sottofamiglia: sec.sottofamiglia,
           confidenza: Math.max(5, sec.confidenza - 2),
@@ -341,8 +425,9 @@ async function deepProductSearch(description) {
 
   if (suggerimenti.length === 0 && pubchem.found) {
     suggerimenti.push({
+      codice: '6.9',
       famiglia: 'Lab Reagents',
-      sottofamiglia: 'CHEMICALS - POLVERI',
+      sottofamiglia: 'CHEMICALS',
       confidenza: 7,
       spiegazione: `Composto chimico trovato su PubChem: ${pubchem.name}. ${pubchem.descriptions?.[0]?.substring(0, 200) || ''}`
     });
@@ -350,13 +435,15 @@ async function deepProductSearch(description) {
 
   if (suggerimenti.length === 0 && uniprot.found) {
     suggerimenti.push({
+      codice: '6.8',
       famiglia: 'Lab Reagents',
-      sottofamiglia: 'ANTICORPI - WB (Western Blot)',
+      sottofamiglia: 'ANTICORPI',
       confidenza: 6,
       spiegazione: `Proteina identificata su UniProt: ${uniprot.results[0]?.name}. Potrebbe essere un target per anticorpi.`
     });
   }
 
+  // Aggiungi keyword results come alternative se non già presenti
   if (keywordResults.length > 0 && suggerimenti.length < 3) {
     for (const kr of keywordResults) {
       if (!suggerimenti.find(s => s.sottofamiglia === kr.sottofamiglia)) {
@@ -367,7 +454,7 @@ async function deepProductSearch(description) {
 
   return {
     suggerimenti: suggerimenti.slice(0, 3),
-    fonti: fonti.length ? fonti : ['Nessun risultato trovato nei database scientifici'],
+    fonti: fonti.length ? fonti : (keywordResults.length > 0 ? ['Database interno categorie'] : ['Nessun risultato trovato']),
     productInfo,
     tempo: Date.now() - startTime
   };
@@ -378,87 +465,90 @@ async function deepProductSearch(description) {
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const categories = [
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Puntali con filtro' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Puntali senza filtro' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Tubi and Plates' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Stripette' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Petri dish' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Multiwell' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Fiasche tappo ventilato' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Fiasche tappo non ventilato' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Cell Scrapers' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Cell strainers' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Cell Stack' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Filtri a bicchiere (Stericup)' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Cryovials' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Counting Slides' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Vials' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Multipette' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Cuvette' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Slides' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Strips' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Pipette monocanale' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Pipette multicanale' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Liquid handling consumables' },
-  { numero: 1, famiglia: 'Plasticware', sottofamiglia: 'Altro' },
-  { numero: 2, famiglia: 'Glassware', sottofamiglia: 'Bottle' },
-  { numero: 2, famiglia: 'Glassware', sottofamiglia: 'Beute Erlenmeyer' },
-  { numero: 2, famiglia: 'Glassware', sottofamiglia: 'Microtube' },
-  { numero: 2, famiglia: 'Glassware', sottofamiglia: 'Glass slides (vetrini) - portaoggetto, coprioggetto' },
-  { numero: 3, famiglia: 'Disposable', sottofamiglia: 'PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice' },
-  { numero: 3, famiglia: 'Disposable', sottofamiglia: 'BUSTE BIOHAZARD RIFIUTI SPECIALI' },
-  { numero: 3, famiglia: 'Disposable', sottofamiglia: 'CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box' },
-  { numero: 3, famiglia: 'Disposable', sottofamiglia: 'Disposable generale: nastro autoclave, carta da banco, cartine pH, spruzzette, pinze, aghi, lame, siringhe, anse, detergenti, alcool' },
-  { numero: 3, famiglia: 'Disposable', sottofamiglia: 'Rotoli carta' },
-  { numero: 3, famiglia: 'Disposable', sottofamiglia: 'Sicurezza' },
-  { numero: 4, famiglia: 'Cancelleria & Stampati', sottofamiglia: 'Cancelleria' },
-  { numero: 4, famiglia: 'Cancelleria & Stampati', sottofamiglia: 'Materiale generico vario' },
-  { numero: 4, famiglia: 'Cancelleria & Stampati', sottofamiglia: 'Riviste' },
-  { numero: 4, famiglia: 'Cancelleria & Stampati', sottofamiglia: 'Pubblicazioni' },
-  { numero: 5, famiglia: 'Equipments e Arredi', sottofamiglia: 'Apparecchiatura Elettronica: microscopi, fotodocumentazione (Gel Doc, Chemidoc), pHmetri, spettrofotometri, power supply, bilance, cell counter, FACS, luminometro/fluorimetro' },
-  { numero: 5, famiglia: 'Equipments e Arredi', sottofamiglia: 'Apparecchiatura Meccanica: centrifughe, ultracentrifughe, vortex, robot liquid handling' },
-  { numero: 5, famiglia: 'Equipments e Arredi', sottofamiglia: 'Apparecchiatura Termoregolatore: freezer, frigoriferi, thermomixer, contenitore criogenico (azoto liquido), bagnetti termostatati, stufe, PCR, real time, incubatori, produttori ghiaccio, autoclavi, stirrer' },
-  { numero: 5, famiglia: 'Equipments e Arredi', sottofamiglia: 'Arredi Ufficio' },
-  { numero: 5, famiglia: 'Equipments e Arredi', sottofamiglia: 'Arredi Laboratorio' },
-  { numero: 5, famiglia: 'Equipments e Arredi', sottofamiglia: 'Taratura, PQ, IQ, OQ - Maintenance' },
-  { numero: 5, famiglia: 'IT', sottofamiglia: 'PC' },
-  { numero: 5, famiglia: 'IT', sottofamiglia: 'Software' },
-  { numero: 5, famiglia: 'IT', sottofamiglia: 'Manutenzione software' },
-  { numero: 5, famiglia: 'IT', sottofamiglia: 'Materiale informatico: laptop, desktop, mouse, stampanti, toner' },
-  { numero: 5, famiglia: 'IT', sottofamiglia: 'Manutenzione hardware' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'KIT: estrazione, purificazione, luciferase assay, kit vitalita, ELISA, enrichment, depletion' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'PCR: taq, dye, agarosio, DNA/RNA marker' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'REAL TIME PCR: sybr green, mastermix, taqman, probes' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'NGS: preparazione librerie, purificazione, frammentazione' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'CLONING: cellule competenti, kit clonaggio' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'ENZIMI: restrizione, modifica (Molecular Biology)' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'OLIGO' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'SIERI: FBS, FCS, dializzati, horse' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'TERRENI: DMEM, RPMI, Alpha MEM, MEM, Iscove\'s' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'ADDITIVI: B27 supplement, glutamine, Pen/Strep, penicillina, streptomicina' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'CITOCHINE' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'TRASFEZIONE' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI - WB (Western Blot)' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI - IHC (Immunoistochimica)' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI - IP (Immunoprecipitazione)' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI - IF (Immunofluorescenza)' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - POLVERI' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS - SOLVENTI' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'Sequenziamento' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'Sintesi: geni, peptidi, plasmidi' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'GAS' },
-  { numero: 6, famiglia: 'Lab Reagents', sottofamiglia: 'Reagenti grado GMP per produzioni farmaceutiche' },
-  { numero: 7, famiglia: 'Animal Housing', sottofamiglia: 'Acquisto animali' },
-  { numero: 7, famiglia: 'Animal Housing', sottofamiglia: 'Materiali di consumo' },
-  { numero: 7, famiglia: 'Animal Housing', sottofamiglia: 'Stabulazione' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Logistica' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Consulenze Ricerca' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Consulenze generiche' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Pharma' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Traduzioni' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'GMP' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Supply Chain' },
-  { numero: 8, famiglia: 'Servizi', sottofamiglia: 'Viaggi' },
+  // 1 - Plasticware
+  { codice: '1.1', famiglia: 'Plasticware', sottofamiglia: 'Tips' },
+  { codice: '1.2', famiglia: 'Plasticware', sottofamiglia: 'Tubes' },
+  { codice: '1.3', famiglia: 'Plasticware', sottofamiglia: 'Stripette' },
+  { codice: '1.4', famiglia: 'Plasticware', sottofamiglia: 'Petri dish' },
+  { codice: '1.5', famiglia: 'Plasticware', sottofamiglia: 'Multiwell' },
+  { codice: '1.6', famiglia: 'Plasticware', sottofamiglia: 'Fiasche tappo ventilato' },
+  { codice: '1.7', famiglia: 'Plasticware', sottofamiglia: 'Fiasche tappo non ventilato' },
+  { codice: '1.8', famiglia: 'Plasticware', sottofamiglia: 'Cell Scrapers' },
+  { codice: '1.9', famiglia: 'Plasticware', sottofamiglia: 'Cell strainers' },
+  { codice: '1.10', famiglia: 'Plasticware', sottofamiglia: 'Cell Stack' },
+  { codice: '1.11', famiglia: 'Plasticware', sottofamiglia: 'Filters' },
+  { codice: '1.12', famiglia: 'Plasticware', sottofamiglia: 'Cryovials' },
+  { codice: '1.13', famiglia: 'Plasticware', sottofamiglia: 'Counting Slides' },
+  { codice: '1.14', famiglia: 'Plasticware', sottofamiglia: 'Altro' },
+  { codice: '1.15', famiglia: 'Plasticware', sottofamiglia: 'Vials' },
+  { codice: '1.16', famiglia: 'Plasticware', sottofamiglia: 'Multipette' },
+  { codice: '1.17', famiglia: 'Plasticware', sottofamiglia: 'Cuvette' },
+  { codice: '1.18', famiglia: 'Plasticware', sottofamiglia: 'Slides' },
+  { codice: '1.19', famiglia: 'Plasticware', sottofamiglia: 'Strips' },
+  { codice: '1.20', famiglia: 'Plasticware', sottofamiglia: 'Chamber slides' },
+  { codice: '1.21', famiglia: 'Plasticware', sottofamiglia: 'Pipette monocanale' },
+  { codice: '1.22', famiglia: 'Plasticware', sottofamiglia: 'Pipette multicanale' },
+  { codice: '1.23', famiglia: 'Plasticware', sottofamiglia: 'Liquid handling consumables' },
+  // 2 - Glassware
+  { codice: '2.1', famiglia: 'Glassware', sottofamiglia: 'Glassware' },
+  { codice: '2.2', famiglia: 'Glassware', sottofamiglia: 'Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)' },
+  { codice: '2.3', famiglia: 'Glassware', sottofamiglia: 'Altro (Pasteur, dish vetro, ecc)' },
+  // 3 - Disposable
+  { codice: '3.1', famiglia: 'Disposable', sottofamiglia: 'PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc' },
+  { codice: '3.2', famiglia: 'Disposable', sottofamiglia: 'BIOHAZARD - (RIFIUTI SPECIALI)' },
+  { codice: '3.3', famiglia: 'Disposable', sottofamiglia: 'CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box' },
+  { codice: '3.4', famiglia: 'Disposable', sottofamiglia: 'Disposable: nastro autoclave, carta da banco, carta rotoli, cartine Ph, spruzzette, pinze ed accessori di precisione, aghi, lame, siringhe, anse, lame, detergenti, alcool etc' },
+  { codice: '3.5', famiglia: 'Disposable', sottofamiglia: 'Sicurezza sul lavoro (sicurezza generale)' },
+  { codice: '3.6', famiglia: 'Disposable', sottofamiglia: 'ALTRO' },
+  // 4 - Stampati
+  { codice: '4.1', famiglia: 'Stampati', sottofamiglia: 'Materiale generico vario' },
+  { codice: '4.2', famiglia: 'Stampati', sottofamiglia: 'Riviste' },
+  { codice: '4.3', famiglia: 'Stampati', sottofamiglia: 'Pubblicazioni' },
+  // 5 - Equipments, Arredi & IT
+  { codice: '5.1', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro' },
+  { codice: '5.2', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Apparecchiatura Elettromeccanica Ricerca: Centrifughe, Ultracentrifughe, Vortex, Robot Liquid Handling' },
+  { codice: '5.3', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Apparecchiatura Termoregolatore Ricerca: Freezer, Frigoriferi, Thermomixer, Contenitore criogenico, Bagnetti termostatati, Stufe, PCR, Real Time, Incubatori, Produttori ghiaccio, Autoclavi, Stirrer' },
+  { codice: '5.4', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Arredi Ufficio' },
+  { codice: '5.5', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Arredi Laboratorio' },
+  { codice: '5.6', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Manutenzione apparecchiature ricerca (Taratura, PQ, IQ, OQ - Contratti di manutenzione)' },
+  { codice: '5.7', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Hardware' },
+  { codice: '5.8', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Software' },
+  { codice: '5.9', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Manutenzione software' },
+  { codice: '5.10', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Materiale informatico' },
+  { codice: '5.11', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Manutenzione hardware' },
+  { codice: '5.12', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Accessori Apparecchiature' },
+  { codice: '5.13', famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'ALTRO' },
+  // 6 - Lab Reagents
+  { codice: '6.1', famiglia: 'Lab Reagents', sottofamiglia: 'KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.' },
+  { codice: '6.2', famiglia: 'Lab Reagents', sottofamiglia: 'Molecular Biology' },
+  { codice: '6.3', famiglia: 'Lab Reagents', sottofamiglia: 'NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.' },
+  { codice: '6.4', famiglia: 'Lab Reagents', sottofamiglia: 'Synthesis: oligos, siRNA, peptide, plasmids, genes' },
+  { codice: '6.5', famiglia: 'Lab Reagents', sottofamiglia: 'Cell Biology' },
+  { codice: '6.6', famiglia: 'Lab Reagents', sottofamiglia: 'CITOCHINE e fattori di crescita' },
+  { codice: '6.7', famiglia: 'Lab Reagents', sottofamiglia: 'Protein' },
+  { codice: '6.8', famiglia: 'Lab Reagents', sottofamiglia: 'ANTICORPI' },
+  { codice: '6.9', famiglia: 'Lab Reagents', sottofamiglia: 'CHEMICALS' },
+  { codice: '6.10', famiglia: 'Lab Reagents', sottofamiglia: 'GAS' },
+  { codice: '6.11', famiglia: 'Lab Reagents', sottofamiglia: 'GMP (Reagenti grado GMP per produzioni farmaceutiche)' },
+  { codice: '6.12', famiglia: 'Lab Reagents', sottofamiglia: 'Clinical and Pre-Clinical' },
+  { codice: '6.13', famiglia: 'Lab Reagents', sottofamiglia: 'Histology' },
+  { codice: '6.14', famiglia: 'Lab Reagents', sottofamiglia: 'ALTRO' },
+  // 7 - Animal housing
+  { codice: '7.1', famiglia: 'Animal housing', sottofamiglia: 'ACQUISTO ANIMALI' },
+  { codice: '7.2', famiglia: 'Animal housing', sottofamiglia: 'MATERIALI DI CONSUMO Animali (farmaci, diete)' },
+  { codice: '7.3', famiglia: 'Animal housing', sottofamiglia: 'STABULAZIONE' },
+  { codice: '7.4', famiglia: 'Animal housing', sottofamiglia: 'ALTRO' },
+  // 8 - SERVIZI
+  { codice: '8.1', famiglia: 'SERVIZI', sottofamiglia: 'Logistica' },
+  { codice: '8.2', famiglia: 'SERVIZI', sottofamiglia: 'Consulenze Ricerca' },
+  { codice: '8.3', famiglia: 'SERVIZI', sottofamiglia: 'Consulenze generiche' },
+  { codice: '8.4', famiglia: 'SERVIZI', sottofamiglia: 'Pharma' },
+  { codice: '8.5', famiglia: 'SERVIZI', sottofamiglia: 'Traduzioni' },
+  { codice: '8.6', famiglia: 'SERVIZI', sottofamiglia: 'GMP' },
+  { codice: '8.7', famiglia: 'SERVIZI', sottofamiglia: 'Supply Chain' },
+  { codice: '8.8', famiglia: 'SERVIZI', sottofamiglia: 'Viaggi' },
+  { codice: '8.9', famiglia: 'SERVIZI', sottofamiglia: 'Servizi di Ricerca' },
+  { codice: '8.10', famiglia: 'SERVIZI', sottofamiglia: 'ALTRO' },
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -466,58 +556,81 @@ const categories = [
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const categoryKeywords = {
-  'Plasticware|Puntali con filtro': ['puntali filtro', 'filter tip', 'filtered tip', 'tip filter', 'puntale filtro', 'tips with filter', 'art tips'],
-  'Plasticware|Puntali senza filtro': ['puntali', 'tips', 'puntale', 'tip rack', 'puntali universali'],
-  'Plasticware|Tubi and Plates': ['tubi', 'tubes', 'plate', 'piastra', 'eppendorf', 'falcon', 'provetta', 'provette', 'microtube', '15ml', '50ml', '1.5ml', '0.5ml', 'pcr plate', 'deep well'],
+  // 1 - Plasticware
+  'Plasticware|Tips': ['puntali', 'puntale', 'tips', 'tip', 'filter tip', 'filtered tip', 'puntali filtro', 'puntali senza filtro', 'art tips', 'tips with filter'],
+  'Plasticware|Tubes': ['tubi', 'tubes', 'tube', 'eppendorf', 'falcon', 'provetta', 'provette', 'microtube', '15ml', '50ml', '1.5ml', '0.5ml', 'pcr tube', 'deep well'],
   'Plasticware|Stripette': ['stripette', 'pipetta sierologica', 'serological pipette'],
   'Plasticware|Petri dish': ['petri', 'piastra petri', 'petri dish', 'capsule petri'],
-  'Plasticware|Multiwell': ['multiwell', 'multi-well', '96 well', '24 well', '12 well', '6 well', '48 well', '384 well', 'well plate'],
+  'Plasticware|Multiwell': ['multiwell', 'multi-well', '96 well', '24 well', '12 well', '6 well', '48 well', '384 well', 'well plate', 'piastra', 'piastre', 'plate'],
   'Plasticware|Fiasche tappo ventilato': ['fiasca', 'flask', 'fiasche', 'ventilato', 'vented', 'cell culture flask', 't25', 't75', 't175', 't225'],
+  'Plasticware|Fiasche tappo non ventilato': ['non ventilato', 'non-vented', 'sealed flask'],
   'Plasticware|Cell Scrapers': ['scraper', 'cell scraper', 'raschietto'],
   'Plasticware|Cell strainers': ['strainer', 'cell strainer', 'filtro cellule'],
-  'Plasticware|Filtri a bicchiere (Stericup)': ['stericup', 'filtro bicchiere', 'vacuum filter', 'steritop', 'bottle top filter'],
+  'Plasticware|Cell Stack': ['cell stack', 'cellstack', 'corning cellstack'],
+  'Plasticware|Filters': ['stericup', 'steritop', 'filtro bicchiere', 'vacuum filter', 'bottle top filter', 'filtro', 'filter unit', 'syringe filter'],
   'Plasticware|Cryovials': ['cryovial', 'criotubo', 'criovial', 'cryogenic vial'],
-  'Plasticware|Cuvette': ['cuvetta', 'cuvette', 'cuvetta spettro'],
+  'Plasticware|Counting Slides': ['counting slide', 'camera conta', 'countess slide'],
+  'Plasticware|Vials': ['vial', 'vials', 'flaconcino'],
+  'Plasticware|Multipette': ['multipette', 'combitip', 'dispensatore'],
+  'Plasticware|Cuvette': ['cuvetta', 'cuvette'],
+  'Plasticware|Slides': ['slide', 'vetrino plastica'],
+  'Plasticware|Strips': ['strip', 'strips', 'pcr strip'],
+  'Plasticware|Chamber slides': ['chamber slide', 'lab-tek', 'ibidi slide', 'camera coltura'],
   'Plasticware|Pipette monocanale': ['pipetta', 'pipette', 'monocanale', 'single channel', 'micropipetta'],
   'Plasticware|Pipette multicanale': ['multicanale', 'multichannel', '8 canali', '12 canali'],
-  'Glassware|Bottle': ['bottiglia vetro', 'glass bottle', 'bottle', 'duran', 'schott'],
-  'Glassware|Beute Erlenmeyer': ['beuta', 'erlenmeyer', 'beute'],
-  'Glassware|Glass slides (vetrini) - portaoggetto, coprioggetto': ['vetrino', 'vetrini', 'glass slide', 'coprioggetto', 'portaoggetto', 'coverslip', 'microscope slide'],
-  'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice': ['guanti', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari', 'sopracalzari', 'dpi'],
-  'Disposable|BUSTE BIOHAZARD RIFIUTI SPECIALI': ['biohazard', 'rifiuti', 'buste', 'sacchetti rifiuti', 'waste bag'],
-  'Disposable|CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box': ['cryobox', 'parafilm', 'contenitore pcr', 'box campioni', 'rack', 'scatola congelamento'],
-  'Disposable|Disposable generale: nastro autoclave, carta da banco, cartine pH, spruzzette, pinze, aghi, lame, siringhe, anse, detergenti, alcool': ['nastro', 'autoclave tape', 'carta banco', 'pH', 'spruzzetta', 'siringa', 'syringe', 'ago', 'needle', 'lama', 'blade', 'ansa', 'loop', 'detergente', 'alcool', 'ethanol', 'isopropanol'],
-  'Cancelleria & Stampati|Cancelleria': ['penna', 'carta', 'busta', 'toner', 'cancelleria', 'post-it', 'block notes'],
-  'Equipments e Arredi|Apparecchiatura Elettronica: microscopi, fotodocumentazione (Gel Doc, Chemidoc), pHmetri, spettrofotometri, power supply, bilance, cell counter, FACS, luminometro/fluorimetro': ['microscopio', 'microscope', 'gel doc', 'chemidoc', 'phmetro', 'spettrofotometro', 'spectrophotometer', 'nanodrop', 'power supply', 'bilancia', 'cell counter', 'facs', 'citofluorimetro', 'flow cytometer', 'luminometro', 'fluorimetro', 'plate reader'],
-  'Equipments e Arredi|Apparecchiatura Meccanica: centrifughe, ultracentrifughe, vortex, robot liquid handling': ['centrifuga', 'centrifuge', 'ultracentrifuga', 'vortex', 'robot', 'liquid handler', 'hamilton', 'biomek'],
-  'Equipments e Arredi|Apparecchiatura Termoregolatore: freezer, frigoriferi, thermomixer, contenitore criogenico (azoto liquido), bagnetti termostatati, stufe, PCR, real time, incubatori, produttori ghiaccio, autoclavi, stirrer': ['freezer', 'frigorifero', 'thermomixer', 'azoto liquido', 'bagnetto', 'water bath', 'stufa', 'oven', 'termociclatore', 'thermal cycler', 'pcr machine', 'real time', 'incubatore', 'incubator', 'autoclave', 'stirrer', 'ghiaccio', 'ice machine'],
-  'IT|Materiale informatico: laptop, desktop, mouse, stampanti, toner': ['laptop', 'computer', 'desktop', 'mouse', 'stampante', 'printer', 'monitor', 'tastiera', 'keyboard'],
-  'IT|Software': ['software', 'licenza', 'license', 'abbonamento software'],
-  'Lab Reagents|KIT: estrazione, purificazione, luciferase assay, kit vitalita, ELISA, enrichment, depletion': ['kit', 'estrazione', 'extraction', 'purificazione', 'purification', 'luciferase', 'elisa', 'miniprep', 'maxiprep', 'midiprep', 'rneasy', 'dneasy', 'blood kit', 'tissue kit'],
-  'Lab Reagents|PCR: taq, dye, agarosio, DNA/RNA marker': ['taq', 'polymerase', 'agarosio', 'agarose', 'dna marker', 'rna marker', 'ladder', 'loading dye', 'pcr master', 'dreamtaq', 'phusion', 'q5'],
-  'Lab Reagents|REAL TIME PCR: sybr green, mastermix, taqman, probes': ['sybr', 'taqman', 'probe', 'real time', 'qpcr', 'rt-pcr', 'mastermix', 'power sybr'],
-  'Lab Reagents|NGS: preparazione librerie, purificazione, frammentazione': ['ngs', 'next gen', 'libreria', 'library prep', 'frammentazione', 'nextera', 'truseq', 'illumina kit', 'sequencing kit'],
-  'Lab Reagents|CLONING: cellule competenti, kit clonaggio': ['competenti', 'competent cell', 'clonaggio', 'cloning', 'gateway', 'topo', 'gibson', 'ligation', 'ligasi'],
-  'Lab Reagents|ENZIMI: restrizione, modifica (Molecular Biology)': ['enzima restrizione', 'restriction enzyme', 'ecori', 'bamhi', 'hindiii', 'xhoi', 'noti', 'ligase', 'fosfatasi', 'chinasi', 'phosphatase', 'kinase', 'nuclease', 'dnase', 'rnase', 'deoxyribonuclease', 'ribonuclease', 'endonuclease', 'exonuclease', 'topoisomerase', 'caspase', 'collagenase', 'trypsin', 'dispase', 'proteinase', 'reverse transcriptase', 'luciferase', 'benzonase', 'turbo dnase', 'proteinase k'],
-  'Lab Reagents|OLIGO': ['oligo', 'oligonucleotide', 'primer', 'primers', 'probe', 'custom oligo', 'idt'],
-  'Lab Reagents|SIERI: FBS, FCS, dializzati, horse': ['fbs', 'fcs', 'siero', 'serum', 'fetal bovine', 'horse serum', 'siero fetale'],
-  'Lab Reagents|TERRENI: DMEM, RPMI, Alpha MEM, MEM, Iscove\'s': ['dmem', 'rpmi', 'mem', 'terreno', 'medium', 'media', 'iscove', 'f12', 'ham'],
-  'Lab Reagents|ADDITIVI: B27 supplement, glutamine, Pen/Strep, penicillina, streptomicina': ['glutamine', 'glutamax', 'pen/strep', 'penicillina', 'streptomicina', 'b27', 'supplement', 'additivo', 'neaa', 'amino acid'],
-  'Lab Reagents|CITOCHINE': ['citochina', 'cytokine', 'growth factor', 'fattore crescita', 'il-2', 'il-6', 'tnf', 'ifn', 'vegf', 'egf', 'fgf', 'bmp', 'wnt', 'scf'],
-  'Lab Reagents|TRASFEZIONE': ['trasfezione', 'transfection', 'lipofectamine', 'lipofection', 'electroporation', 'nucleofection', 'fugene'],
-  'Lab Reagents|ANTICORPI - WB (Western Blot)': ['anticorpo', 'antibody', 'western blot', 'wb', 'primary antibody', 'secondary antibody', 'hrp', 'anti-'],
-  'Lab Reagents|ANTICORPI - IHC (Immunoistochimica)': ['ihc', 'immunoistochimica', 'immunohistochemistry', 'paraffin'],
-  'Lab Reagents|ANTICORPI - IP (Immunoprecipitazione)': ['immunoprecipitazione', 'ip', 'co-ip', 'chip', 'pulldown', 'pull-down'],
-  'Lab Reagents|ANTICORPI - IF (Immunofluorescenza)': ['immunofluorescenza', 'immunofluorescence', 'fluorescent antibody', 'alexa fluor', 'fitc', 'pe ', 'apc'],
-  'Lab Reagents|CHEMICALS - POLVERI': ['polvere', 'powder', 'chemical', 'reagente', 'reagent', 'tris', 'nacl', 'edta', 'sds', 'dtt', 'bsa', 'agar'],
-  'Lab Reagents|CHEMICALS - SOLVENTI': ['solvente', 'solvent', 'metanolo', 'methanol', 'acetone', 'cloroformio', 'dmso', 'dmf', 'etanolo', 'xilene'],
-  'Lab Reagents|Sequenziamento': ['sequenziamento', 'sequencing', 'sanger', 'genewiz', 'eurofins sequencing'],
-  'Lab Reagents|Sintesi: geni, peptidi, plasmidi': ['sintesi gene', 'gene synthesis', 'peptide synthesis', 'plasmide', 'plasmid', 'gblock', 'custom gene'],
+  'Plasticware|Liquid handling consumables': ['liquid handling', 'reservoir', 'serbatoio'],
+  // 2 - Glassware
+  'Glassware|Glassware': ['bottiglia vetro', 'glass bottle', 'bottle', 'duran', 'schott', 'beuta', 'erlenmeyer', 'beute', 'matraccio', 'cilindro graduato', 'glassware', 'vetro laboratorio'],
+  'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)': ['vetrino', 'vetrini', 'glass slide', 'coprioggetto', 'portaoggetto', 'coverslip', 'microscope slide', 'vetrini portaoggetto'],
+  'Glassware|Altro (Pasteur, dish vetro, ecc)': ['pasteur', 'pipetta pasteur', 'dish vetro', 'glass dish'],
+  // 3 - Disposable
+  'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc': ['guanti', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari', 'sopracalzari', 'dpi', 'guanto', 'protezione'],
+  'Disposable|BIOHAZARD - (RIFIUTI SPECIALI)': ['biohazard', 'rifiuti', 'buste', 'sacchetti rifiuti', 'waste bag', 'rifiuti speciali'],
+  'Disposable|CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box': ['cryobox', 'parafilm', 'contenitore pcr', 'box campioni', 'rack', 'scatola congelamento', 'cryoboxes'],
+  'Disposable|Disposable: nastro autoclave, carta da banco, carta rotoli, cartine Ph, spruzzette, pinze ed accessori di precisione, aghi, lame, siringhe, anse, lame, detergenti, alcool etc': ['nastro', 'autoclave tape', 'carta banco', 'carta rotoli', 'spruzzetta', 'siringa', 'syringe', 'ago', 'needle', 'lama', 'blade', 'ansa', 'loop', 'detergente', 'alcool', 'ethanol', 'isopropanol', 'cartine ph', 'pinze'],
+  'Disposable|Sicurezza sul lavoro (sicurezza generale)': ['sicurezza lavoro', 'safety', 'estintore', 'primo soccorso', 'first aid'],
+  // 4 - Stampati
+  'Stampati|Materiale generico vario': ['penna', 'carta', 'busta', 'toner', 'cancelleria', 'post-it', 'block notes', 'materiale ufficio'],
+  'Stampati|Riviste': ['rivista', 'journal', 'abbonamento rivista', 'subscription'],
+  'Stampati|Pubblicazioni': ['pubblicazione', 'publication', 'libro', 'book', 'manuale'],
+  // 5 - Equipments, Arredi & IT
+  'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro': ['microscopio', 'microscope', 'gel doc', 'chemidoc', 'phmetro', 'spettrofotometro', 'spectrophotometer', 'nanodrop', 'power supply', 'bilancia', 'cell counter', 'facs', 'citofluorimetro', 'flow cytometer', 'luminometro', 'fluorimetro', 'plate reader'],
+  'Equipments, Arredi & IT|Apparecchiatura Elettromeccanica Ricerca: Centrifughe, Ultracentrifughe, Vortex, Robot Liquid Handling': ['centrifuga', 'centrifuge', 'ultracentrifuga', 'vortex', 'robot', 'liquid handler', 'hamilton', 'biomek'],
+  'Equipments, Arredi & IT|Apparecchiatura Termoregolatore Ricerca: Freezer, Frigoriferi, Thermomixer, Contenitore criogenico, Bagnetti termostatati, Stufe, PCR, Real Time, Incubatori, Produttori ghiaccio, Autoclavi, Stirrer': ['freezer', 'frigorifero', 'thermomixer', 'azoto liquido', 'bagnetto', 'water bath', 'stufa', 'oven', 'termociclatore', 'thermal cycler', 'pcr machine', 'incubatore', 'incubator', 'autoclave', 'stirrer', 'ghiaccio', 'ice machine'],
+  'Equipments, Arredi & IT|Arredi Ufficio': ['scrivania', 'sedia ufficio', 'armadio ufficio', 'arredi ufficio'],
+  'Equipments, Arredi & IT|Arredi Laboratorio': ['banco laboratorio', 'cappa', 'fume hood', 'arredi laboratorio', 'scaffale lab'],
+  'Equipments, Arredi & IT|Manutenzione apparecchiature ricerca (Taratura, PQ, IQ, OQ - Contratti di manutenzione)': ['taratura', 'calibrazione', 'manutenzione', 'maintenance', 'contratto manutenzione', 'iq', 'oq', 'pq'],
+  'Equipments, Arredi & IT|Hardware': ['pc', 'laptop', 'computer', 'desktop', 'stampante', 'printer', 'monitor', 'tastiera', 'keyboard', 'hardware'],
+  'Equipments, Arredi & IT|Software': ['software', 'licenza', 'license', 'abbonamento software'],
+  'Equipments, Arredi & IT|Materiale informatico': ['mouse', 'toner', 'cartuccia', 'cavo', 'hard disk', 'ssd', 'usb', 'materiale informatico'],
+  'Equipments, Arredi & IT|Manutenzione hardware': ['manutenzione hardware', 'riparazione pc', 'assistenza tecnica'],
+  'Equipments, Arredi & IT|Accessori Apparecchiature': ['accessorio', 'rotore', 'rotor', 'obiettivo', 'filtro ottico', 'lampada', 'accessori apparecchiature'],
+  // 6 - Lab Reagents
+  'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.': ['kit', 'estrazione', 'extraction', 'purificazione', 'purification', 'luciferase', 'elisa', 'miniprep', 'maxiprep', 'midiprep', 'rneasy', 'dneasy', 'blood kit', 'tissue kit', 'enrichment', 'depletion', 'isolation kit', 'detection kit'],
+  'Lab Reagents|Molecular Biology': ['taq', 'polymerase', 'agarosio', 'agarose', 'dna marker', 'rna marker', 'ladder', 'loading dye', 'pcr master', 'dreamtaq', 'phusion', 'q5', 'sybr', 'taqman', 'probe', 'real time', 'qpcr', 'rt-pcr', 'mastermix', 'power sybr', 'competenti', 'competent cell', 'clonaggio', 'cloning', 'gateway', 'topo', 'gibson', 'ligation', 'ligasi', 'enzima restrizione', 'restriction enzyme', 'ecori', 'bamhi', 'hindiii', 'xhoi', 'noti', 'ligase', 'fosfatasi', 'chinasi', 'phosphatase', 'kinase', 'nuclease', 'dnase', 'rnase', 'deoxyribonuclease', 'ribonuclease', 'endonuclease', 'exonuclease', 'topoisomerase', 'reverse transcriptase', 'benzonase', 'turbo dnase', 'proteinase k', 'molecular biology', 'buffer pcr', 'dna polymerase', 'rna polymerase', 'crispr', 'cas9', 'caspase', 'trypsin', 'dispase', 'collagenase'],
+  'Lab Reagents|NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.': ['ngs', 'next gen', 'libreria', 'library prep', 'frammentazione', 'nextera', 'truseq', 'illumina kit', 'sequencing kit', 'sanger', 'sequenziamento', 'sequencing', 'genewiz', 'eurofins sequencing'],
+  'Lab Reagents|Synthesis: oligos, siRNA, peptide, plasmids, genes': ['oligo', 'oligonucleotide', 'primer', 'primers', 'custom oligo', 'idt', 'sirna', 'shrna', 'mirna', 'grna', 'sgrna', 'antisense', 'morpholino', 'sintesi gene', 'gene synthesis', 'peptide synthesis', 'plasmide', 'plasmid', 'gblock', 'custom gene'],
+  'Lab Reagents|Cell Biology': ['fbs', 'fcs', 'siero', 'serum', 'fetal bovine', 'horse serum', 'siero fetale', 'dmem', 'rpmi', 'mem', 'terreno', 'medium', 'media', 'iscove', 'f12', 'ham', 'glutamine', 'glutamax', 'pen/strep', 'penicillina', 'streptomicina', 'b27', 'supplement', 'additivo', 'neaa', 'amino acid', 'trasfezione', 'transfection', 'lipofectamine', 'lipofection', 'electroporation', 'nucleofection', 'fugene', 'trizol', 'cell biology', 'coltura cellulare', 'matrigel', 'geltrex', 'coating'],
+  'Lab Reagents|CITOCHINE e fattori di crescita': ['citochina', 'cytokine', 'growth factor', 'fattore crescita', 'il-2', 'il-6', 'tnf', 'ifn', 'vegf', 'egf', 'fgf', 'bmp', 'wnt', 'scf', 'interleukin', 'chemokine', 'interferon', 'pdgf', 'tgf'],
+  'Lab Reagents|Protein': ['proteina', 'protein', 'western blot reagent', 'bradford', 'bca assay', 'page', 'gel elettroforesi', 'transfer', 'blocking', 'proteomica', 'proteomics', 'mass spec'],
+  'Lab Reagents|ANTICORPI': ['anticorpo', 'antibody', 'western blot', 'wb', 'primary antibody', 'secondary antibody', 'hrp', 'anti-', 'ihc', 'immunoistochimica', 'immunohistochemistry', 'paraffin', 'immunoprecipitazione', 'ip', 'co-ip', 'chip', 'pulldown', 'pull-down', 'immunofluorescenza', 'immunofluorescence', 'alexa fluor', 'fitc', 'pe ', 'apc', 'anticorpi', 'monoclonal', 'polyclonal'],
+  'Lab Reagents|CHEMICALS': ['polvere', 'powder', 'chemical', 'reagente', 'reagent', 'tris', 'nacl', 'edta', 'sds', 'dtt', 'bsa', 'agar', 'solvente', 'solvent', 'metanolo', 'methanol', 'acetone', 'cloroformio', 'dmso', 'dmf', 'etanolo', 'xilene', 'chemicals'],
   'Lab Reagents|GAS': ['gas', 'co2', 'azoto', 'nitrogen', 'ossigeno', 'oxygen', 'bombola'],
-  'Animal Housing|Acquisto animali': ['topi', 'mice', 'mouse', 'ratto', 'rat', 'animale', 'animal', 'jackson lab', 'charles river animal'],
-  'Animal Housing|Materiali di consumo': ['gabbia', 'cage', 'bedding', 'lettiera', 'mangime', 'food pellet'],
-  'Servizi|Logistica': ['logistica', 'trasporto', 'spedizione', 'corriere', 'shipping'],
-  'Servizi|Consulenze Ricerca': ['consulenza ricerca', 'research consulting', 'cro', 'contract research'],
+  'Lab Reagents|GMP (Reagenti grado GMP per produzioni farmaceutiche)': ['gmp', 'grado gmp', 'gmp grade', 'pharmaceutical grade'],
+  'Lab Reagents|Clinical and Pre-Clinical': ['clinical', 'pre-clinical', 'preclinical', 'trial', 'gcp'],
+  'Lab Reagents|Histology': ['istologia', 'histology', 'paraffina', 'embedding', 'microtomo', 'microtome', 'colorazione', 'ematossilina', 'eosina', 'h&e'],
+  // 7 - Animal housing
+  'Animal housing|ACQUISTO ANIMALI': ['topi', 'mice', 'mouse', 'ratto', 'rat', 'animale', 'animal', 'jackson lab', 'charles river animal', 'acquisto animali'],
+  'Animal housing|MATERIALI DI CONSUMO Animali (farmaci, diete)': ['gabbia', 'cage', 'bedding', 'lettiera', 'mangime', 'food pellet', 'dieta animali', 'farmaci animali'],
+  'Animal housing|STABULAZIONE': ['stabulazione', 'stabulario', 'animal facility', 'housing'],
+  // 8 - SERVIZI
+  'SERVIZI|Logistica': ['logistica', 'trasporto', 'spedizione', 'corriere', 'shipping'],
+  'SERVIZI|Consulenze Ricerca': ['consulenza ricerca', 'research consulting', 'cro', 'contract research'],
+  'SERVIZI|Consulenze generiche': ['consulenza', 'consulting', 'consulente'],
+  'SERVIZI|Pharma': ['pharma', 'farmaceutica', 'pharmaceutical'],
+  'SERVIZI|Traduzioni': ['traduzione', 'translation', 'interpretariato'],
+  'SERVIZI|Supply Chain': ['supply chain', 'approvvigionamento'],
+  'SERVIZI|Servizi di Ricerca': ['servizio ricerca', 'research service', 'outsourcing ricerca'],
 };
 
 // Dizionario alias brand (nome comune -> nome nel database)
@@ -652,7 +765,30 @@ const distributors = [
 
 const distributorBrands = [
   // === 2Biological Instruments ===
+  { distributore: '2Biological', brand: 'AD INSTRUMENTS', esclusiva: true },
+  { distributore: '2Biological', brand: 'BIOSEB', esclusiva: false },
+  { distributore: '2Biological', brand: 'BRAINTREE SCIENTIFIC', esclusiva: true },
+  { distributore: '2Biological', brand: 'CAMPDEN INSTRUMENTS', esclusiva: false },
+  { distributore: '2Biological', brand: 'ETHICON', esclusiva: false },
   { distributore: '2Biological', brand: 'FINE SCIENCE TOOLS', esclusiva: true },
+  { distributore: '2Biological', brand: 'HAMILTON', esclusiva: false },
+  { distributore: '2Biological', brand: 'INSTECH', esclusiva: true },
+  { distributore: '2Biological', brand: 'IPRECIO', esclusiva: false },
+  { distributore: '2Biological', brand: 'JULABO', esclusiva: false },
+  { distributore: '2Biological', brand: 'KD SCIENTIFIC', esclusiva: false },
+  { distributore: '2Biological', brand: 'KERN & SOHN', esclusiva: false },
+  { distributore: '2Biological', brand: 'KOPF INSTRUMENTS', esclusiva: false },
+  { distributore: '2Biological', brand: 'LBS BIOTECH', esclusiva: false },
+  { distributore: '2Biological', brand: 'LOMIR BIOMEDICAL', esclusiva: false },
+  { distributore: '2Biological', brand: 'NORAY BIOTECH', esclusiva: false },
+  { distributore: '2Biological', brand: 'PANLAB', esclusiva: false },
+  { distributore: '2Biological', brand: 'PLEXX', esclusiva: false },
+  { distributore: '2Biological', brand: 'RADNOTI', esclusiva: false },
+  { distributore: '2Biological', brand: 'RWD LIFE SCIENCE', esclusiva: false },
+  { distributore: '2Biological', brand: 'SAFE LAB', esclusiva: false },
+  { distributore: '2Biological', brand: 'SCICOMIN', esclusiva: false },
+  { distributore: '2Biological', brand: 'VISITECH SYSTEMS', esclusiva: false },
+  { distributore: '2Biological', brand: 'WPI', esclusiva: true },
   // === AGILENT ===
   { distributore: 'Agilent', brand: 'Agilent', esclusiva: true },
   // === Aurogene ===
@@ -1142,12 +1278,16 @@ function smartCategoryMatch(description) {
   }
 
   scored.sort((a, b) => b.score - a.score);
-  return scored.slice(0, 3).map(s => ({
-    famiglia: s.famiglia,
-    sottofamiglia: s.sottofamiglia,
-    confidenza: Math.min(10, Math.round(s.score / 3) + 5),
-    spiegazione: `Match basato su parole chiave (score: ${s.score})`
-  }));
+  return scored.slice(0, 3).map(s => {
+    const cat = categories.find(c => c.famiglia === s.famiglia && c.sottofamiglia === s.sottofamiglia);
+    return {
+      codice: cat?.codice || '',
+      famiglia: s.famiglia,
+      sottofamiglia: s.sottofamiglia,
+      confidenza: Math.min(10, Math.round(s.score / 3) + 5),
+      spiegazione: `Match basato su parole chiave (score: ${s.score})`
+    };
+  });
 }
 
 function smartBrandSearch(query) {

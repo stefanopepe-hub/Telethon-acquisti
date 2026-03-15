@@ -573,7 +573,7 @@ const categoryKeywords = {
   'Plasticware|Vials': ['vial', 'vials', 'flaconcino'],
   'Plasticware|Multipette': ['multipette', 'combitip', 'dispensatore'],
   'Plasticware|Cuvette': ['cuvetta', 'cuvette'],
-  'Plasticware|Slides': ['slide', 'vetrino plastica'],
+  'Plasticware|Slides': ['slide plastica', 'vetrino plastica', 'plastic slide'],
   'Plasticware|Strips': ['strip', 'strips', 'pcr strip'],
   'Plasticware|Chamber slides': ['chamber slide', 'lab-tek', 'ibidi slide', 'camera coltura'],
   'Plasticware|Pipette monocanale': ['pipetta', 'pipette', 'monocanale', 'single channel', 'micropipetta'],
@@ -581,7 +581,7 @@ const categoryKeywords = {
   'Plasticware|Liquid handling consumables': ['liquid handling', 'reservoir', 'serbatoio'],
   // 2 - Glassware
   'Glassware|Glassware': ['bottiglia vetro', 'glass bottle', 'bottle', 'duran', 'schott', 'beuta', 'erlenmeyer', 'beute', 'matraccio', 'cilindro graduato', 'glassware', 'vetro laboratorio'],
-  'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)': ['vetrino', 'vetrini', 'glass slide', 'coprioggetto', 'portaoggetto', 'coverslip', 'microscope slide', 'vetrini portaoggetto'],
+  'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)': ['vetrino', 'vetrini', 'glass slide', 'coprioggetto', 'portaoggetto', 'coverslip', 'microscope slide', 'vetrini portaoggetto', 'superfrost', 'superfrost plus', 'polysine', 'starfrost', 'histobond', 'menzel', 'matsunami', 'slide', 'slides', 'frosted slide', 'charged slide', 'adhesion slide'],
   'Glassware|Altro (Pasteur, dish vetro, ecc)': ['pasteur', 'pipetta pasteur', 'dish vetro', 'glass dish'],
   // 3 - Disposable
   'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc': ['guanti', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari', 'sopracalzari', 'dpi', 'guanto', 'protezione'],
@@ -631,6 +631,102 @@ const categoryKeywords = {
   'SERVIZI|Traduzioni': ['traduzione', 'translation', 'interpretariato'],
   'SERVIZI|Supply Chain': ['supply chain', 'approvvigionamento'],
   'SERVIZI|Servizi di Ricerca': ['servizio ricerca', 'research service', 'outsourcing ricerca'],
+};
+
+// ═══════════════════════════════════════════════════════════════════════════════
+// PRODUCT ALIASES — Nomi commerciali noti → categoria esatta (alta priorità)
+// Se il testo contiene uno di questi, la categoria è certa (score boost +15)
+// ═══════════════════════════════════════════════════════════════════════════════
+const productAliases = {
+  // Glassware - Glass slides
+  'superfrost': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'superfrost plus': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'polysine': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'starfrost': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'histobond': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'menzel': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'matsunami': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'coverslip': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'coprioggetto': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  'portaoggetto': 'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)',
+  // Plasticware - Tips
+  'art tips': 'Plasticware|Tips',
+  'safetyspace': 'Plasticware|Tips',
+  'tipone': 'Plasticware|Tips',
+  'low retention tip': 'Plasticware|Tips',
+  // Plasticware - Tubes
+  'eppendorf tube': 'Plasticware|Tubes',
+  'lobind': 'Plasticware|Tubes',
+  'protein lobind': 'Plasticware|Tubes',
+  'biopur': 'Plasticware|Tubes',
+  // Plasticware - Multiwell
+  'costar': 'Plasticware|Multiwell',
+  'nunclon': 'Plasticware|Multiwell',
+  'cellstar': 'Plasticware|Multiwell',
+  'lumitrac': 'Plasticware|Multiwell',
+  // Plasticware - Fiasche
+  'cellbind': 'Plasticware|Fiasche tappo ventilato',
+  'celltreat': 'Plasticware|Fiasche tappo ventilato',
+  // Plasticware - Filters
+  'stericup': 'Plasticware|Filters',
+  'steritop': 'Plasticware|Filters',
+  'millex': 'Plasticware|Filters',
+  'minisart': 'Plasticware|Filters',
+  // Disposable - Protezione
+  'kimtech': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'microflex': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'semperguard': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'ansell': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  // Lab Reagents - Molecular Biology
+  'phusion': 'Lab Reagents|Molecular Biology',
+  'dreamtaq': 'Lab Reagents|Molecular Biology',
+  'q5 polymerase': 'Lab Reagents|Molecular Biology',
+  'kapa hifi': 'Lab Reagents|Molecular Biology',
+  'gateway cloning': 'Lab Reagents|Molecular Biology',
+  'topo cloning': 'Lab Reagents|Molecular Biology',
+  'gibson assembly': 'Lab Reagents|Molecular Biology',
+  'turbo dnase': 'Lab Reagents|Molecular Biology',
+  // Lab Reagents - Cell Biology
+  'lipofectamine': 'Lab Reagents|Cell Biology',
+  'fugene': 'Lab Reagents|Cell Biology',
+  'trizol': 'Lab Reagents|Cell Biology',
+  'matrigel': 'Lab Reagents|Cell Biology',
+  'geltrex': 'Lab Reagents|Cell Biology',
+  'glutamax': 'Lab Reagents|Cell Biology',
+  'optimem': 'Lab Reagents|Cell Biology',
+  'opti-mem': 'Lab Reagents|Cell Biology',
+  'nucleofector': 'Lab Reagents|Cell Biology',
+  // Lab Reagents - KIT
+  'rneasy': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  'dneasy': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  'miniprep': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  'maxiprep': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  'bright-glo': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  'dual-glo': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  'celltiter': 'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.',
+  // Lab Reagents - NGS
+  'nextera': 'Lab Reagents|NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.',
+  'truseq': 'Lab Reagents|NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.',
+  'chromium': 'Lab Reagents|NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.',
+  // Lab Reagents - Anticorpi
+  'alexa fluor': 'Lab Reagents|ANTICORPI',
+  'dylight': 'Lab Reagents|ANTICORPI',
+  'irdye': 'Lab Reagents|ANTICORPI',
+  // Lab Reagents - Chemicals
+  'sure/seal': 'Lab Reagents|CHEMICALS',
+  'acroseal': 'Lab Reagents|CHEMICALS',
+  // Lab Reagents - Histology
+  'tissue-tek': 'Lab Reagents|Histology',
+  'oct compound': 'Lab Reagents|Histology',
+  'dako pen': 'Lab Reagents|Histology',
+  // Glassware - Glassware
+  'duran': 'Glassware|Glassware',
+  'schott': 'Glassware|Glassware',
+  'pyrex': 'Glassware|Glassware',
+  // Equipment
+  'nanodrop': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
+  'qubit': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
+  'countess': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
 };
 
 // Dizionario alias brand (nome comune -> nome nel database)
@@ -1420,6 +1516,14 @@ function smartCategoryMatch(description) {
   const words = q.split(/[\s,.\-\/()]+/).filter(w => w.length > 1);
   const scored = [];
 
+  // STEP 0: Check productAliases — nomi commerciali noti (alta priorità)
+  const aliasBoosts = {}; // key -> bonus score
+  for (const [alias, catKey] of Object.entries(productAliases)) {
+    if (q.includes(alias.toLowerCase())) {
+      aliasBoosts[catKey] = (aliasBoosts[catKey] || 0) + 15 + alias.length;
+    }
+  }
+
   for (const [key, keywords] of Object.entries(categoryKeywords)) {
     const [famiglia, sottofamiglia] = key.split('|');
     let score = 0;
@@ -1441,8 +1545,21 @@ function smartCategoryMatch(description) {
     // Check famiglia match
     if (famiglia.toLowerCase().includes(q) || q.includes(famiglia.toLowerCase())) score += 5;
 
+    // Apply productAlias boost if this category was matched
+    if (aliasBoosts[key]) {
+      score += aliasBoosts[key];
+    }
+
     if (score > 0) {
       scored.push({ famiglia, sottofamiglia, score });
+    }
+  }
+
+  // If alias matched a category not yet in scored, add it directly
+  for (const [catKey, boost] of Object.entries(aliasBoosts)) {
+    if (!scored.find(s => `${s.famiglia}|${s.sottofamiglia}` === catKey)) {
+      const [famiglia, sottofamiglia] = catKey.split('|');
+      scored.push({ famiglia, sottofamiglia, score: boost });
     }
   }
 

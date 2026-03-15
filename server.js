@@ -827,6 +827,7 @@ const distributorBrands = [
   // === Bio-Rad ===
   { distributore: 'Bio-Rad', brand: 'Bio-Rad', esclusiva: true },
   // === Bio-Techne ===
+  { distributore: 'Bio-Techne', brand: 'Bio-Techne', esclusiva: true },
   { distributore: 'Bio-Techne', brand: 'ACD', esclusiva: true },
   { distributore: 'Bio-Techne', brand: 'ELLA', esclusiva: false },
   { distributore: 'Bio-Techne', brand: 'Lunaphore', esclusiva: true },
@@ -977,6 +978,7 @@ const distributorBrands = [
   // === Illumina ===
   { distributore: 'ILLUMINA', brand: 'ILLUMINA', esclusiva: true },
   // === LGC Standards ===
+  { distributore: 'LGC STANDARDS', brand: 'LGC Standards', esclusiva: true },
   { distributore: 'LGC STANDARDS', brand: 'ATCC', esclusiva: true },
   // === Life Technologies (ThermoFisher) ===
   { distributore: 'Life Technologies', brand: 'APPLIED BIOSYSTEM', esclusiva: true },
@@ -1226,6 +1228,182 @@ const distributorBrands = [
 ];
 
 // ═══════════════════════════════════════════════════════════════════════════════
+// DATI — Database globale brand Life Science
+// ═══════════════════════════════════════════════════════════════════════════════
+
+const globalBrands = [
+  // ── REAGENTI ──────────────────────────────────────────────────────────────
+  { name: 'Thermo Fisher Scientific', website: 'https://www.thermofisher.com', category: 'Reagenti', country: 'US', description: 'Reagenti, strumenti e consumabili per ricerca e diagnostica' },
+  { name: 'Merck / MilliporeSigma', website: 'https://www.sigmaaldrich.com', category: 'Reagenti', country: 'DE', description: 'Reagenti chimici, biologici e kit per laboratorio' },
+  { name: 'Bio-Rad Laboratories', website: 'https://www.bio-rad.com', category: 'Reagenti', country: 'US', description: 'Reagenti e strumenti per elettroforesi, PCR e immunologia' },
+  { name: 'Promega', website: 'https://www.promega.com', category: 'Reagenti', country: 'US', description: 'Reagenti per biologia molecolare, saggi cellulari e proteomica' },
+  { name: 'New England Biolabs', website: 'https://www.neb.com', category: 'Reagenti', country: 'US', description: 'Enzimi di restrizione, polimerasi e reagenti per clonaggio' },
+  { name: 'Takara Bio', website: 'https://www.takarabio.com', category: 'Reagenti', country: 'JP', description: 'Reagenti per PCR, clonaggio, espressione genica e stem cell' },
+  { name: 'QIAGEN', website: 'https://www.qiagen.com', category: 'Reagenti', country: 'DE', description: 'Kit per estrazione acidi nucleici, PCR e diagnostica molecolare' },
+  { name: 'Roche Life Science', website: 'https://lifescience.roche.com', category: 'Reagenti', country: 'CH', description: 'Reagenti per ricerca biomedica e diagnostica clinica' },
+  { name: 'Agilent Technologies', website: 'https://www.agilent.com', category: 'Reagenti', country: 'US', description: 'Strumenti analitici, reagenti per genomica e proteomica' },
+  { name: 'Enzo Life Sciences', website: 'https://www.enzolifesciences.com', category: 'Reagenti', country: 'US', description: 'Reagenti per segnali cellulari, apoptosi e stress ossidativo' },
+  { name: 'Cayman Chemical', website: 'https://www.caymanchem.com', category: 'Reagenti', country: 'US', description: 'Reagenti biochimici, lipidi bioattivi e saggi enzimatici' },
+  { name: 'MedChemExpress', website: 'https://www.medchemexpress.com', category: 'Reagenti', country: 'US', description: 'Inibitori, composti bioattivi e librerie chimiche' },
+  { name: 'Selleck Chemicals', website: 'https://www.selleckchem.com', category: 'Reagenti', country: 'US', description: 'Inibitori selettivi e composti per screening farmacologico' },
+  { name: 'Tocris Bioscience', website: 'https://www.tocris.com', category: 'Reagenti', country: 'GB', description: 'Reagenti farmacologici e modulatori per ricerca biomedica' },
+  { name: 'Abmole Bioscience', website: 'https://www.abmole.com', category: 'Reagenti', country: 'US', description: 'Inibitori e composti bioattivi per ricerca preclinica' },
+  { name: 'Sigma-Aldrich', website: 'https://www.sigmaaldrich.com', category: 'Reagenti', country: 'US', description: 'Reagenti chimici e biochimici per ricerca scientifica' },
+  { name: 'Fisher Scientific', website: 'https://www.fishersci.com', category: 'Reagenti', country: 'US', description: 'Forniture complete per laboratorio, reagenti e strumenti' },
+  { name: 'VWR International', website: 'https://www.vwr.com', category: 'Reagenti', country: 'US', description: 'Distribuzione reagenti, consumabili e attrezzature di laboratorio' },
+  { name: 'MP Biomedicals', website: 'https://www.mpbio.com', category: 'Reagenti', country: 'US', description: 'Reagenti per scienze della vita, diagnostica e biochimici' },
+  { name: 'Nacalai Tesque', website: 'https://www.nacalai.co.jp', category: 'Reagenti', country: 'JP', description: 'Reagenti chimici e biochimici per ricerca accademica' },
+  { name: 'Wako Pure Chemical', website: 'https://www.fujifilm.com/ffwk', category: 'Reagenti', country: 'JP', description: 'Reagenti analitici e chimici di alta purezza' },
+
+  // ── ANTICORPI ─────────────────────────────────────────────────────────────
+  { name: 'Abcam', website: 'https://www.abcam.com', category: 'Anticorpi', country: 'GB', description: 'Anticorpi ricombinanti validati e reagenti per ricerca' },
+  { name: 'Cell Signaling Technology', website: 'https://www.cellsignal.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi per segnalazione cellulare e oncologia' },
+  { name: 'BioLegend', website: 'https://www.biolegend.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi per citometria a flusso e immunologia' },
+  { name: 'Santa Cruz Biotechnology', website: 'https://www.scbt.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi, siRNA e reagenti per biologia molecolare' },
+  { name: 'R&D Systems', website: 'https://www.rndsystems.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi, proteine ricombinanti e saggi immunologici' },
+  { name: 'Bio-Techne', website: 'https://www.bio-techne.com', category: 'Anticorpi', country: 'US', description: 'Proteine, anticorpi e reagenti per ricerca biomedica' },
+  { name: 'Proteintech', website: 'https://www.ptglab.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi originali prodotti in-house e validati' },
+  { name: 'Bethyl Laboratories', website: 'https://www.bethyl.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi policlonali e monoclonali per Western e IHC' },
+  { name: 'GeneTex', website: 'https://www.genetex.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi per ricerca in oncologia e neuroscienze' },
+  { name: 'Novus Biologicals', website: 'https://www.novusbio.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi e reagenti per biologia cellulare e molecolare' },
+  { name: 'Atlas Antibodies', website: 'https://www.atlasantibodies.com', category: 'Anticorpi', country: 'SE', description: 'Anticorpi Triple A validati su Human Protein Atlas' },
+  { name: 'ABclonal', website: 'https://www.abclonal.com', category: 'Anticorpi', country: 'CN', description: 'Anticorpi ricombinanti e reagenti per ricerca' },
+  { name: 'Jackson ImmunoResearch', website: 'https://www.jacksonimmuno.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi secondari coniugati ad alta specificità' },
+  { name: 'Invitrogen (Thermo)', website: 'https://www.thermofisher.com/invitrogen', category: 'Anticorpi', country: 'US', description: 'Anticorpi, sonde fluorescenti e reagenti per biologia' },
+  { name: 'BD Biosciences', website: 'https://www.bdbiosciences.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi e reagenti per citometria a flusso e sorting' },
+  { name: 'Sino Biological', website: 'https://www.sinobiological.com', category: 'Anticorpi', country: 'CN', description: 'Proteine ricombinanti e anticorpi per ricerca e diagnostica' },
+  { name: 'GenScript', website: 'https://www.genscript.com', category: 'Anticorpi', country: 'CN', description: 'Anticorpi custom, sintesi genica e servizi proteomici' },
+  { name: 'Tonbo Biosciences', website: 'https://www.tonbobio.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi coniugati per citometria a flusso e sorting' },
+  { name: 'Millipore (Merck)', website: 'https://www.merckmillipore.com', category: 'Anticorpi', country: 'DE', description: 'Anticorpi e reagenti per Western blot, IHC e IF' },
+  { name: 'Dako (Agilent)', website: 'https://www.agilent.com/en/dako', category: 'Anticorpi', country: 'DK', description: 'Anticorpi e reagenti per immunoistochimica diagnostica' },
+  { name: 'BioXCell', website: 'https://bioxcell.com', category: 'Anticorpi', country: 'US', description: 'Anticorpi monoclonali in vivo per immunologia e oncologia' },
+  { name: 'Beyotime Biotechnology', website: 'https://www.beyotime.com', category: 'Anticorpi', country: 'CN', description: 'Anticorpi e kit per biologia cellulare e molecolare' },
+
+  // ── STRUMENTAZIONE ────────────────────────────────────────────────────────
+  { name: 'Eppendorf', website: 'https://www.eppendorf.com', category: 'Strumentazione', country: 'DE', description: 'Pipette, centrifughe, termociclatori e gestione liquidi' },
+  { name: 'Beckman Coulter', website: 'https://www.beckman.com', category: 'Strumentazione', country: 'US', description: 'Centrifughe, citometri a flusso e automazione laboratorio' },
+  { name: 'Sartorius', website: 'https://www.sartorius.com', category: 'Strumentazione', country: 'DE', description: 'Bilance, bioprocessing e strumenti per coltura cellulare' },
+  { name: 'Heidolph', website: 'https://www.heidolph-instruments.com', category: 'Strumentazione', country: 'DE', description: 'Evaporatori rotanti, agitatori e pompe peristaltiche' },
+  { name: 'IKA', website: 'https://www.ika.com', category: 'Strumentazione', country: 'DE', description: 'Agitatori magnetici, omogenizzatori e calorimetri' },
+  { name: 'Gilson', website: 'https://www.gilson.com', category: 'Strumentazione', country: 'US', description: 'Pipette, HPLC e sistemi di gestione liquidi' },
+  { name: 'Hamilton Company', website: 'https://www.hamiltoncompany.com', category: 'Strumentazione', country: 'US', description: 'Robotica per liquid handling e siringhe di precisione' },
+  { name: 'PerkinElmer', website: 'https://www.perkinelmer.com', category: 'Strumentazione', country: 'US', description: 'Strumenti analitici, imaging e screening ad alta produttività' },
+  { name: 'Tecan', website: 'https://www.tecan.com', category: 'Strumentazione', country: 'CH', description: 'Automazione laboratorio, lettori di piastra e liquid handling' },
+  { name: 'Molecular Devices', website: 'https://www.moleculardevices.com', category: 'Strumentazione', country: 'US', description: 'Lettori multimodali, imaging cellulare e analisi dati' },
+  { name: 'BMG Labtech', website: 'https://www.bmglabtech.com', category: 'Strumentazione', country: 'DE', description: 'Lettori di micropiastre multifunzionali' },
+  { name: 'Biotek (Agilent)', website: 'https://www.biotek.com', category: 'Strumentazione', country: 'US', description: 'Lettori di piastre, imaging cellulare e lavapiastre' },
+  { name: 'Thermo Scientific Instruments', website: 'https://www.thermofisher.com', category: 'Strumentazione', country: 'US', description: 'Spettrometria di massa, cromatografia e centrifughe' },
+  { name: 'Danaher / Cytiva', website: 'https://www.cytiva.com', category: 'Strumentazione', country: 'US', description: 'Cromatografia, filtrazione e bioprocessing' },
+  { name: 'Mettler Toledo', website: 'https://www.mt.com', category: 'Strumentazione', country: 'CH', description: 'Bilance analitiche, pH-metri e strumenti di processo' },
+  { name: 'Hamamatsu Photonics', website: 'https://www.hamamatsu.com', category: 'Strumentazione', country: 'JP', description: 'Fotomoltiplicatori, camere e sensori per imaging' },
+  { name: 'Sony Biotechnology', website: 'https://www.sonybiotechnology.com', category: 'Strumentazione', country: 'JP', description: 'Citometri a flusso e cell sorter spettrali' },
+  { name: 'Binder', website: 'https://www.binder-world.com', category: 'Strumentazione', country: 'DE', description: 'Incubatori, stufe, camere climatiche per laboratorio' },
+  { name: 'INTEGRA Biosciences', website: 'https://www.integra-biosciences.com', category: 'Strumentazione', country: 'CH', description: 'Pipette elettroniche e sistemi di dispensazione' },
+
+  // ── CONSUMABILI ────────────────────────────────────────────────────────────
+  { name: 'Corning Life Sciences', website: 'https://www.corning.com/lifesciences', category: 'Consumabili', country: 'US', description: 'Plastica per coltura cellulare, piastre e vetreria' },
+  { name: 'Greiner Bio-One', website: 'https://www.gbo.com', category: 'Consumabili', country: 'AT', description: 'Piastre multiwell, provette e plastica per laboratorio' },
+  { name: 'Sarstedt', website: 'https://www.sarstedt.com', category: 'Consumabili', country: 'DE', description: 'Provette, pipette sierologiche e consumabili per lab' },
+  { name: 'STARLAB', website: 'https://www.starlab.de', category: 'Consumabili', country: 'DE', description: 'Puntali per pipette, provette e consumabili di laboratorio' },
+  { name: 'Falcon (Corning)', website: 'https://www.corning.com/falcon', category: 'Consumabili', country: 'US', description: 'Provette coniche, piastre Petri e pipette sierologiche' },
+  { name: 'Nunc (Thermo)', website: 'https://www.thermofisher.com/nunc', category: 'Consumabili', country: 'DK', description: 'Piastre per coltura cellulare e crioviali' },
+  { name: 'TPP Techno Plastic Products', website: 'https://www.tpp.ch', category: 'Consumabili', country: 'CH', description: 'Fiasche e piastre per coltura cellulare sterili' },
+  { name: 'NEST Biotechnology', website: 'https://www.nest-biotech.com', category: 'Consumabili', country: 'CN', description: 'Consumabili sterili per coltura cellulare e laboratorio' },
+  { name: 'Eppendorf Consumables', website: 'https://www.eppendorf.com', category: 'Consumabili', country: 'DE', description: 'Provette Safe-Lock, puntali epTIPS e piastre PCR' },
+  { name: 'Axygen (Corning)', website: 'https://www.corning.com/axygen', category: 'Consumabili', country: 'US', description: 'Puntali, provette PCR e consumabili per genomica' },
+  { name: 'Whatman (Cytiva)', website: 'https://www.cytiva.com/whatman', category: 'Consumabili', country: 'GB', description: 'Filtri, membrane e carta cromatografica per laboratorio' },
+  { name: 'Pall Corporation', website: 'https://www.pall.com', category: 'Consumabili', country: 'US', description: 'Filtri e membrane per filtrazione in laboratorio' },
+  { name: 'Millipore Filters', website: 'https://www.merckmillipore.com', category: 'Consumabili', country: 'DE', description: 'Filtri, membrane e sistemi di ultrafiltrazione' },
+  { name: 'Ibidi', website: 'https://www.ibidi.com', category: 'Consumabili', country: 'DE', description: 'Camere e vetrini per microscopia cellulare dal vivo' },
+  { name: 'CellTreat', website: 'https://www.celltreat.com', category: 'Consumabili', country: 'US', description: 'Consumabili sterili per coltura cellulare e pipettaggio' },
+
+  // ── GENOMICA ───────────────────────────────────────────────────────────────
+  { name: 'Illumina', website: 'https://www.illumina.com', category: 'Genomica', country: 'US', description: 'Sequenziamento NGS, microarray e analisi genomica' },
+  { name: 'Pacific Biosciences', website: 'https://www.pacb.com', category: 'Genomica', country: 'US', description: 'Sequenziamento long-read SMRT ad alta accuratezza' },
+  { name: 'Oxford Nanopore Technologies', website: 'https://www.nanoporetech.com', category: 'Genomica', country: 'GB', description: 'Sequenziamento a nanoporo portatile e in tempo reale' },
+  { name: '10x Genomics', website: 'https://www.10xgenomics.com', category: 'Genomica', country: 'US', description: 'Single-cell RNA-seq, ATAC-seq e trascrittomica spaziale' },
+  { name: 'Integrated DNA Technologies', website: 'https://www.idtdna.com', category: 'Genomica', country: 'US', description: 'Oligonucleotidi, primer, sonde e gBlock per PCR e CRISPR' },
+  { name: 'Twist Bioscience', website: 'https://www.twistbioscience.com', category: 'Genomica', country: 'US', description: 'Sintesi genica, librerie NGS e oligo ad alta fedeltà' },
+  { name: 'Eurofins Genomics', website: 'https://www.eurofinsgenomics.eu', category: 'Genomica', country: 'DE', description: 'Sequenziamento Sanger, sintesi oligo e servizi NGS' },
+  { name: 'Microsynth', website: 'https://www.microsynth.ch', category: 'Genomica', country: 'CH', description: 'Sintesi oligonucleotidi e servizi di sequenziamento' },
+  { name: 'Genewiz (Azenta)', website: 'https://www.genewiz.com', category: 'Genomica', country: 'US', description: 'Servizi di sequenziamento, sintesi genica e NGS' },
+  { name: 'Agilent Genomics', website: 'https://www.agilent.com', category: 'Genomica', country: 'US', description: 'SureSelect target enrichment e microarray CGH' },
+  { name: 'Fluidigm (Standard BioTools)', website: 'https://www.standardbio.com', category: 'Genomica', country: 'US', description: 'Single-cell genomica e proteomica di massa' },
+  { name: 'Dovetail Genomics', website: 'https://www.dovetailgenomics.com', category: 'Genomica', country: 'US', description: 'Hi-C, Micro-C e soluzioni per assemblaggio genomi' },
+  { name: 'Element Biosciences', website: 'https://www.elementbiosciences.com', category: 'Genomica', country: 'US', description: 'Piattaforma AVITI per sequenziamento NGS accessibile' },
+  { name: 'Singular Genomics', website: 'https://www.singulargenomics.com', category: 'Genomica', country: 'US', description: 'Sequenziamento benchtop ad alta flessibilità' },
+  { name: 'MGI Tech', website: 'https://www.mgi-tech.com', category: 'Genomica', country: 'CN', description: 'Piattaforme di sequenziamento e automazione genomica' },
+  { name: 'Lexogen', website: 'https://www.lexogen.com', category: 'Genomica', country: 'AT', description: 'Kit per librerie RNA-seq e trascrittoma completo' },
+
+  // ── CELL BIOLOGY ──────────────────────────────────────────────────────────
+  { name: 'Lonza', website: 'https://bioscience.lonza.com', category: 'Cell Biology', country: 'CH', description: 'Terreni di coltura, cellule primarie e nucleofezione' },
+  { name: 'STEMCELL Technologies', website: 'https://www.stemcell.com', category: 'Cell Biology', country: 'CA', description: 'Reagenti e terreni per coltura di cellule staminali' },
+  { name: 'Miltenyi Biotec', website: 'https://www.miltenyibiotec.com', category: 'Cell Biology', country: 'DE', description: 'Separazione cellulare MACS e reagenti per immunologia' },
+  { name: 'ATCC', website: 'https://www.atcc.org', category: 'Cell Biology', country: 'US', description: 'Collezione di linee cellulari autenticate e microorganismi' },
+  { name: 'Gibco (Thermo)', website: 'https://www.thermofisher.com/gibco', category: 'Cell Biology', country: 'US', description: 'Terreni di coltura, siero fetale bovino e supplementi' },
+  { name: 'Corning Matrigel', website: 'https://www.corning.com/matrigel', category: 'Cell Biology', country: 'US', description: 'Matrigel e matrici extracellulari per coltura 3D' },
+  { name: 'PeproTech (Thermo)', website: 'https://www.peprotech.com', category: 'Cell Biology', country: 'US', description: 'Citochine ricombinanti e fattori di crescita' },
+  { name: 'Novoprotein', website: 'https://www.novoprotein.com', category: 'Cell Biology', country: 'CN', description: 'Citochine e fattori di crescita ricombinanti' },
+  { name: 'PromoCell', website: 'https://www.promocell.com', category: 'Cell Biology', country: 'DE', description: 'Cellule primarie umane e terreni di coltura ottimizzati' },
+  { name: 'ScienCell Research', website: 'https://www.sciencellonline.com', category: 'Cell Biology', country: 'US', description: 'Cellule primarie, terreni e reagenti per coltura' },
+  { name: 'Biological Industries', website: 'https://www.bioind.com', category: 'Cell Biology', country: 'IL', description: 'Terreni di coltura e siero per applicazioni cellulari' },
+  { name: 'Repligen', website: 'https://www.repligen.com', category: 'Cell Biology', country: 'US', description: 'Bioprocessing, filtrazione e analisi per bioproduzioni' },
+  { name: 'AddexBio', website: 'https://www.addexbio.com', category: 'Cell Biology', country: 'US', description: 'Linee cellulari ingegnerizzate per screening e saggi' },
+  { name: 'Irvine Scientific', website: 'https://www.irvinesci.com', category: 'Cell Biology', country: 'US', description: 'Terreni di coltura per terapia cellulare e bioproduzione' },
+
+  // ── CHIMICA ───────────────────────────────────────────────────────────────
+  { name: 'TCI (Tokyo Chemical Industry)', website: 'https://www.tcichemicals.com', category: 'Chimica', country: 'JP', description: 'Reagenti chimici organici e inorganici specializzati' },
+  { name: 'Alfa Aesar (Thermo)', website: 'https://www.thermofisher.com/alfaaesar', category: 'Chimica', country: 'US', description: 'Prodotti chimici, metalli e materiali per ricerca' },
+  { name: 'Honeywell Research Chemicals', website: 'https://www.honeywell.com', category: 'Chimica', country: 'US', description: 'Solventi ad alta purezza, reagenti Fluka e Riedel-de Haën' },
+  { name: 'Carlo Erba Reagents', website: 'https://www.carloerbareagents.com', category: 'Chimica', country: 'IT', description: 'Reagenti chimici e solventi per laboratorio' },
+  { name: 'Acros Organics (Thermo)', website: 'https://www.acros.com', category: 'Chimica', country: 'BE', description: 'Reagenti chimici organici per sintesi e ricerca' },
+  { name: 'Chem-Impex International', website: 'https://www.chemimpex.com', category: 'Chimica', country: 'US', description: 'Aminoacidi, peptidi e building block per sintesi' },
+  { name: 'Spectrum Chemical', website: 'https://www.spectrumchemical.com', category: 'Chimica', country: 'US', description: 'Reagenti chimici certificati per laboratorio e industria' },
+  { name: 'AppliChem (PanReac)', website: 'https://www.applichem.com', category: 'Chimica', country: 'DE', description: 'Reagenti biochimici e chimici per ricerca e industria' },
+  { name: 'PanReac AppliChem (ITW)', website: 'https://www.itwreagents.com', category: 'Chimica', country: 'ES', description: 'Solventi, reagenti e prodotti chimici per laboratorio' },
+  { name: 'Lach-Ner', website: 'https://www.lach-ner.com', category: 'Chimica', country: 'CZ', description: 'Prodotti chimici analitici per laboratorio' },
+  { name: 'Scharlab', website: 'https://www.scharlab.com', category: 'Chimica', country: 'ES', description: 'Reagenti chimici e solventi per analisi di laboratorio' },
+
+  // ── DIAGNOSTICA ───────────────────────────────────────────────────────────
+  { name: 'Abbott Diagnostics', website: 'https://www.abbott.com', category: 'Diagnostica', country: 'US', description: 'Sistemi diagnostici per immunoassay e chimica clinica' },
+  { name: 'Roche Diagnostics', website: 'https://diagnostics.roche.com', category: 'Diagnostica', country: 'CH', description: 'Sistemi diagnostici in vitro e point-of-care' },
+  { name: 'Siemens Healthineers', website: 'https://www.siemens-healthineers.com', category: 'Diagnostica', country: 'DE', description: 'Diagnostica in vitro, imaging medico e terapia' },
+  { name: 'Becton Dickinson', website: 'https://www.bd.com', category: 'Diagnostica', country: 'US', description: 'Sistemi per raccolta campioni e diagnostica clinica' },
+  { name: 'bioMérieux', website: 'https://www.biomerieux.com', category: 'Diagnostica', country: 'FR', description: 'Diagnostica microbiologica e test di sensibilità' },
+  { name: 'DiaSorin', website: 'https://www.diasorin.com', category: 'Diagnostica', country: 'IT', description: 'Immunodiagnostica e diagnostica molecolare' },
+  { name: 'Hologic', website: 'https://www.hologic.com', category: 'Diagnostica', country: 'US', description: 'Diagnostica molecolare e salute della donna' },
+  { name: 'Cepheid (Danaher)', website: 'https://www.cepheid.com', category: 'Diagnostica', country: 'US', description: 'Sistemi GeneXpert per diagnostica molecolare rapida' },
+  { name: 'Euroimmun (Revvity)', website: 'https://www.euroimmun.com', category: 'Diagnostica', country: 'DE', description: 'Test per autoimmunità, infettivologia e allergologia' },
+  { name: 'Seegene', website: 'https://www.seegene.com', category: 'Diagnostica', country: 'KR', description: 'Test PCR multiplex per diagnostica molecolare' },
+
+  // ── PROTEOMICA ────────────────────────────────────────────────────────────
+  { name: 'Waters Corporation', website: 'https://www.waters.com', category: 'Proteomica', country: 'US', description: 'HPLC, UPLC e spettrometria di massa per proteomica' },
+  { name: 'Bruker', website: 'https://www.bruker.com', category: 'Proteomica', country: 'US', description: 'Spettrometria di massa timsTOF e soluzioni 4D-proteomica' },
+  { name: 'SCIEX (Danaher)', website: 'https://sciex.com', category: 'Proteomica', country: 'US', description: 'Spettrometri di massa triple-quad e QTOF per omiche' },
+  { name: 'Shimadzu', website: 'https://www.shimadzu.com', category: 'Proteomica', country: 'JP', description: 'Strumenti analitici, LCMS e spettrometria di massa' },
+  { name: 'PreOmics', website: 'https://www.preomics.com', category: 'Proteomica', country: 'DE', description: 'Kit per preparazione campioni proteomici rapida' },
+  { name: 'Biognosys', website: 'https://www.biognosys.com', category: 'Proteomica', country: 'CH', description: 'Software e servizi per proteomica quantitativa' },
+  { name: 'Olink Proteomics', website: 'https://www.olink.com', category: 'Proteomica', country: 'SE', description: 'Piattaforma PEA per analisi proteomica ad alta scala' },
+  { name: 'SomaLogic', website: 'https://www.somalogic.com', category: 'Proteomica', country: 'US', description: 'Piattaforma SOMAscan per misurazione proteomica su larga scala' },
+  { name: 'Seer Bio', website: 'https://www.seer.bio', category: 'Proteomica', country: 'US', description: 'Nanoparticelle per arricchimento proteomico da plasma' },
+  { name: 'Phenomenex', website: 'https://www.phenomenex.com', category: 'Proteomica', country: 'US', description: 'Colonne HPLC e SPE per cromatografia e proteomica' },
+
+  // ── IMAGING ───────────────────────────────────────────────────────────────
+  { name: 'Carl Zeiss Microscopy', website: 'https://www.zeiss.com/microscopy', category: 'Imaging', country: 'DE', description: 'Microscopi confocali, lightsheet e super-risoluzione' },
+  { name: 'Leica Microsystems', website: 'https://www.leica-microsystems.com', category: 'Imaging', country: 'DE', description: 'Microscopi confocali, criostati e microtomi' },
+  { name: 'Nikon Instruments', website: 'https://www.microscope.healthcare.nikon.com', category: 'Imaging', country: 'JP', description: 'Microscopi per fluorescenza e live-cell imaging' },
+  { name: 'Olympus / Evident', website: 'https://www.olympus-lifescience.com', category: 'Imaging', country: 'JP', description: 'Microscopi ottici, confocali e soluzioni per imaging' },
+  { name: 'Andor Technology (Oxford Instr.)', website: 'https://andor.oxinst.com', category: 'Imaging', country: 'GB', description: 'Camere scientifiche EMCCD e sCMOS per microscopia' },
+  { name: 'Biotium', website: 'https://biotium.com', category: 'Imaging', country: 'US', description: 'Sonde fluorescenti, coloranti e reagenti per imaging' },
+  { name: 'Abberior Instruments', website: 'https://www.abberior-instruments.com', category: 'Imaging', country: 'DE', description: 'Microscopi STED e super-risoluzione' },
+  { name: 'Photometrics', website: 'https://www.photometrics.com', category: 'Imaging', country: 'US', description: 'Camere scientifiche per imaging in fluorescenza' },
+  { name: 'Thorlabs', website: 'https://www.thorlabs.com', category: 'Imaging', country: 'US', description: 'Componenti ottici, laser e sistemi per microscopia' },
+  { name: 'Logos Biosystems', website: 'https://logosbio.com', category: 'Imaging', country: 'KR', description: 'Contacellule automatici e tissue clearing per imaging' },
+  { name: 'Yokogawa (CellVoyager)', website: 'https://www.yokogawa.com/solutions/products-platforms/life-science/', category: 'Imaging', country: 'JP', description: 'Sistemi confocali spinning disk ad alto contenuto' },
+  { name: 'Etaluma', website: 'https://www.etaluma.com', category: 'Imaging', country: 'US', description: 'Microscopi compatti per imaging in incubatore' },
+];
+
+// ═══════════════════════════════════════════════════════════════════════════════
 // SMART MATCHING ENGINE (no AI needed)
 // ═══════════════════════════════════════════════════════════════════════════════
 
@@ -1392,7 +1570,11 @@ app.get('/api/distributors', (req, res) => {
 app.get('/api/distributors/:nome/brands', (req, res) => {
   const nome = req.params.nome.toLowerCase();
   const dist = distributors.find(d => d.nome.toLowerCase().includes(nome));
-  const brands = distributorBrands.filter(b => b.distributore.toLowerCase().includes(nome));
+  // Match bidirezionale: il nome del distributore nei brands può essere abbreviato
+  const brands = distributorBrands.filter(b => {
+    const bn = b.distributore.toLowerCase();
+    return bn.includes(nome) || nome.includes(bn);
+  });
   res.json({ condizioni: dist || null, brands });
 });
 
@@ -1413,6 +1595,33 @@ app.post('/api/cerca-distributore', (req, res) => {
     return res.json({ brand: trovati[0].brand, distributori: trovati, tipo: 'trovato' });
   }
   res.json({ trovati: [], tipo: 'nessun_risultato', messaggio: 'Brand non trovato nel database. Prova con un nome diverso o abbreviazione.' });
+});
+
+// Global Brand Search — arricchito con distributori italiani
+function enrichBrands(brands) {
+  return brands.map(b => {
+    const bn = b.name.toLowerCase();
+    const distMatch = distributorBrands.filter(db => {
+      const dbn = db.brand.toLowerCase();
+      return bn.includes(dbn) || dbn.includes(bn) ||
+             (bn.split(' ')[0].length > 3 && bn.split(' ')[0] === dbn.split(' ')[0]);
+    });
+    return {
+      ...b,
+      distributoriIT: distMatch.map(d => ({ distributore: d.distributore, esclusiva: d.esclusiva }))
+    };
+  });
+}
+
+app.get('/api/global-brands', (req, res) => {
+  const q = (req.query.q || '').toLowerCase().trim();
+  const results = q
+    ? globalBrands.filter(b =>
+        b.name.toLowerCase().includes(q) ||
+        b.category.toLowerCase().includes(q) ||
+        b.description.toLowerCase().includes(q))
+    : globalBrands;
+  res.json(enrichBrands(results));
 });
 
 // SPA fallback

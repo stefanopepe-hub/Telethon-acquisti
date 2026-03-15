@@ -21,7 +21,7 @@
         <li><a href="#" class="nav-link" data-page="distributori">
           <span class="icon">🏢</span> Distributori</a></li>
         <li><a href="#" class="nav-link" data-page="brand-search">
-          <span class="icon">🔍</span> Cerca Brand</a></li>
+          <span class="icon">🌍</span> Brand Life Science</a></li>
         <li><a href="#" class="nav-link" data-page="cerca-distributore">
           <span class="icon">🔄</span> Cerca Distributore</a></li>
       </ul>
@@ -63,14 +63,15 @@
         <div id="dist-list" class="card-grid"></div>
       </section>
 
-      <!-- PAGE: Brand Search -->
+      <!-- PAGE: Brand Encyclopedia -->
       <section class="page" id="page-brand-search">
-        <h1>Cerca Brand / Fornitore</h1>
-        <p class="subtitle">Trova quale distributore italiano vende un determinato brand.</p>
+        <h1>🌍 Brand Life Science</h1>
+        <p class="subtitle">Database globale dei principali produttori life science. Cerca un brand per trovare info, sito web e distributore italiano.</p>
         <div class="search-box">
-          <input type="text" id="brand-input" placeholder="Es: Invitrogen, NEB, Zymo, Takara..." />
-          <button onclick="searchBrand()">Cerca</button>
+          <input type="text" id="brand-input" placeholder="Cerca brand: Invitrogen, NEB, Zymo, Takara, Abcam..." oninput="searchGlobalBrands()" />
         </div>
+        <div class="brand-filters" id="brand-filters"></div>
+        <div class="brand-stats" id="brand-stats"></div>
         <div id="brand-results" class="results-area"></div>
       </section>
 

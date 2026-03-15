@@ -209,37 +209,81 @@ async function showDistributor(nome) {
   }
 }
 
-// ── Brand Search ──
-async function searchBrand() {
-  const q = $('brand-input').value.trim();
-  if (!q) return;
+// ── Global Brand Search ──
+let allGlobalBrands = [];
+let activeFilter = '';
 
-  $('brand-results').innerHTML = '<div class="loading">Cercando...</div>';
-
+async function loadGlobalBrands() {
   try {
-    const resp = await fetch(`/api/brands/search?q=${encodeURIComponent(q)}`);
-    const data = await resp.json();
+    const resp = await fetch('/api/global-brands');
+    allGlobalBrands = await resp.json();
 
-    if (!data.trovati?.length) {
-      $('brand-results').innerHTML = `<div class="empty-state">Nessun distributore trovato per "${q}".<br>Prova con Cerca Distributore!</div>`;
-      return;
-    }
+    // Build category filters
+    const cats = [...new Set(allGlobalBrands.map(b => b.category))].sort();
+    $('brand-filters').innerHTML = `<button class="brand-filter active" onclick="filterBrandCat('')">Tutti</button>` +
+      cats.map(c => `<button class="brand-filter" onclick="filterBrandCat('${c}')">${c}</button>`).join('');
 
-    $('brand-results').innerHTML = data.trovati.map(r => `
-      <div class="brand-result">
-        <h3><span class="brand-name">${r.brand}</span> ${r.esclusiva ? '<span class="badge-escl">ESCLUSIVA</span>' : '<span class="badge-non-escl">non esclusiva</span>'}</h3>
-        <div class="dist-name">Distributore: <strong>${r.distributore}</strong></div>
-        ${r.condizioni ? `<div class="cond" style="margin-top:0.5rem;font-size:0.85rem">
-          Min. ordine: ${r.condizioni.min_ordine} | Spedizione: ${r.condizioni.spese_spedizione} | Ghiaccio: ${r.condizioni.spese_ghiaccio_secco}
-        </div>` : ''}
-      </div>
-    `).join('');
+    $('brand-stats').innerHTML = `<strong>${allGlobalBrands.length}</strong> brand nel database`;
+    renderGlobalBrands(allGlobalBrands);
   } catch (err) {
-    $('brand-results').innerHTML = `<div class="empty-state">Errore: ${err.message}</div>`;
+    $('brand-results').innerHTML = '<div class="empty-state">Errore caricamento brand</div>';
   }
 }
 
-$('brand-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') searchBrand(); });
+function filterBrandCat(cat) {
+  activeFilter = cat;
+  document.querySelectorAll('.brand-filter').forEach(b => b.classList.remove('active'));
+  event.target.classList.add('active');
+  searchGlobalBrands();
+}
+
+function searchGlobalBrands() {
+  const q = ($('brand-input')?.value || '').toLowerCase().trim();
+  let filtered = allGlobalBrands;
+
+  if (activeFilter) {
+    filtered = filtered.filter(b => b.category === activeFilter);
+  }
+  if (q) {
+    filtered = filtered.filter(b =>
+      b.name.toLowerCase().includes(q) ||
+      b.description.toLowerCase().includes(q) ||
+      b.category.toLowerCase().includes(q)
+    );
+  }
+
+  $('brand-stats').innerHTML = `<strong>${filtered.length}</strong> brand${activeFilter ? ` in "${activeFilter}"` : ''}${q ? ` per "${q}"` : ''}`;
+  renderGlobalBrands(filtered);
+}
+
+function renderGlobalBrands(brands) {
+  if (!brands.length) {
+    $('brand-results').innerHTML = '<div class="empty-state">Nessun brand trovato. Prova con un termine diverso.</div>';
+    return;
+  }
+
+  $('brand-results').innerHTML = brands.slice(0, 100).map(b => {
+    const distHtml = b.distributoriIT?.length
+      ? b.distributoriIT.map(d => `<span class="brand-dist-info">${d.distributore}${d.esclusiva ? ' ★' : ''}</span>`).join(', ')
+      : '<span class="brand-dist-info no-dist">Nessun distributore IT mappato</span>';
+
+    return `<div class="global-brand-card">
+      <div class="brand-main">
+        <h3>${b.name}</h3>
+        <div><span class="brand-cat-tag">${b.category}</span><span class="brand-country">${b.country || ''}</span></div>
+        <div class="brand-desc">${b.description}</div>
+      </div>
+      <div class="brand-right">
+        ${b.website ? `<a href="${b.website}" target="_blank">🔗 Sito web</a><br>` : ''}
+        ${distHtml}
+      </div>
+    </div>`;
+  }).join('');
+
+  if (brands.length > 100) {
+    $('brand-results').innerHTML += `<div class="empty-state" style="padding:1rem">Mostrati 100 di ${brands.length} risultati. Affina la ricerca.</div>`;
+  }
+}
 
 // ── Cerca Distributore ──
 async function cercaDistributore() {
@@ -280,3 +324,4 @@ $('alt-input')?.addEventListener('keydown', e => { if (e.key === 'Enter') cercaD
 // ── Init ──
 loadCategoryTree();
 loadDistributors();
+loadGlobalBrands();

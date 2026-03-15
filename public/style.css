@@ -299,7 +299,72 @@ h1 { font-size: 1.8rem; font-weight: 700; margin-bottom: 0.5rem; }
   color: #666;
 }
 
-/* ── Brand Results ── */
+/* ── Brand Filters ── */
+.brand-filters {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  margin-bottom: 1rem;
+}
+.brand-filter {
+  padding: 0.35rem 0.8rem;
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  background: var(--card-bg);
+  color: var(--text);
+  transition: all 0.15s;
+}
+.brand-filter:hover { border-color: var(--primary); color: var(--primary); }
+.brand-filter.active { background: var(--primary); color: white; border-color: var(--primary); }
+.brand-stats {
+  font-size: 0.85rem;
+  color: var(--text-light);
+  margin-bottom: 1rem;
+}
+
+/* ── Global Brand Card ── */
+.global-brand-card {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 1rem 1.3rem;
+  margin-bottom: 0.6rem;
+  box-shadow: var(--shadow);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  transition: transform 0.15s;
+}
+.global-brand-card:hover { transform: translateY(-2px); }
+.brand-main { flex: 1; }
+.brand-main h3 { font-size: 1rem; color: var(--primary); margin-bottom: 0.25rem; }
+.brand-main .brand-desc { font-size: 0.85rem; color: var(--text-light); }
+.brand-main .brand-cat-tag {
+  display: inline-block;
+  background: var(--primary-light);
+  color: var(--primary);
+  padding: 0.1rem 0.5rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  margin-right: 0.3rem;
+}
+.brand-main .brand-country { font-size: 0.75rem; color: var(--text-light); margin-left: 0.3rem; }
+.brand-right { text-align: right; min-width: 180px; }
+.brand-right a {
+  display: inline-block;
+  color: var(--primary);
+  font-size: 0.82rem;
+  text-decoration: none;
+  margin-bottom: 0.3rem;
+}
+.brand-right a:hover { text-decoration: underline; }
+.brand-dist-info { font-size: 0.8rem; color: var(--accent); font-weight: 600; }
+.brand-dist-info .no-dist { color: var(--text-light); font-weight: 400; }
+
+/* ── Brand Results (old, keep for cerca-distributore) ── */
 .brand-result {
   background: var(--card-bg);
   border: 1px solid var(--border);

@@ -194,6 +194,12 @@ const productClassificationRules = [
   // Protein → 6.7
   { pattern: /\b(protein purif|western blot|bradford|bca|page|electrophoresis|proteom)\b/i,
     famiglia: 'Lab Reagents', sottofamiglia: 'Protein', confidence: 7, label: 'Proteina / Proteomica' },
+  // PPE / Protezione → 3.1 PROTEZIONE
+  { pattern: /\b(glove|latex glove|nitrile glove|lab coat|laboratory coat|safety goggle|goggles|face mask|face shield|ppe|protective equipment|overshoe|shoe cover|respirator|n95|ffp2|guant[io]|camice|calzari)\b/i,
+    famiglia: 'Disposable', sottofamiglia: 'PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc', confidence: 8, label: 'DPI / Protezione' },
+  // Lab Equipment → 5.1-5.3
+  { pattern: /\b(ph meter|water bath|dry bath|heat block|orbital shaker|rocker|rotator|sonicator|homogenizer|transilluminator|gel imager|magnetic stirrer|hot plate|laminar flow|biosafety cabinet|fume hood)\b/i,
+    famiglia: 'Equipments, Arredi & IT', sottofamiglia: 'Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro', confidence: 7, label: 'Apparecchiatura laboratorio' },
 ];
 
 function classifyFromText(text) {
@@ -244,27 +250,57 @@ function validatePubChemResult(query, pubchemName) {
 
 // Lista di termini comuni italiani/lab che NON devono essere cercati su PubChem
 const commonLabTerms = new Set([
-  'guanti', 'guanto', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari',
-  'puntali', 'puntale', 'tips', 'tip', 'pipetta', 'pipette', 'micropipetta',
-  'provetta', 'provette', 'tubi', 'tubes', 'falcon', 'eppendorf',
-  'petri', 'piastra', 'piastre', 'multiwell', 'fiasca', 'fiasche', 'flask',
-  'vetrino', 'vetrini', 'slides', 'coprioggetto', 'portaoggetto',
-  'scraper', 'strainer', 'stericup', 'steritop', 'cryovial', 'criovial',
-  'cuvetta', 'cuvette', 'stripette',
-  'biohazard', 'rifiuti', 'buste', 'sacchetti',
-  'cryobox', 'parafilm', 'rack', 'box',
+  // Italiano - Protezione e DPI
+  'guanti', 'guanto', 'lattice', 'camice', 'camici', 'calzari', 'sopracalzari', 'dpi', 'protezione', 'sicurezza',
+  // English - PPE
+  'gloves', 'glove', 'nitrile', 'latex', 'lab coat', 'goggles', 'face mask', 'face shield',
+  'ppe', 'overshoe', 'shoe cover', 'respirator', 'safety glasses', 'hairnet',
+  // Italiano - Plasticware
+  'puntali', 'puntale', 'pipetta', 'pipette', 'micropipetta', 'provetta', 'provette', 'tubi',
+  'petri', 'piastra', 'piastre', 'multiwell', 'fiasca', 'fiasche', 'stripette',
+  'vetrino', 'vetrini', 'coprioggetto', 'portaoggetto',
+  'scraper', 'strainer', 'stericup', 'steritop', 'cryovial', 'criovial', 'cuvetta', 'cuvette',
+  // English - Plasticware
+  'tips', 'tip', 'tubes', 'tube', 'falcon', 'eppendorf', 'flask', 'slides',
+  'centrifuge tube', 'conical tube', 'microcentrifuge tube', 'culture plate', 'assay plate',
+  'well plate', 'pipette tip', 'barrier tip', 'serological pipette', 'cell scraper',
+  'cell strainer', 'reservoir', 'snap cap', 'screw cap', 'pcr plate', 'pcr strip',
+  'deep well plate', 'chamber slide', 'cryovial', 'microplate',
+  // Italiano - Disposable
+  'biohazard', 'rifiuti', 'buste', 'sacchetti', 'cryobox', 'parafilm', 'rack', 'box',
   'nastro', 'carta', 'spruzzetta', 'siringa', 'siringhe', 'ago', 'aghi', 'lama', 'lame',
   'ansa', 'detergente', 'alcool', 'sapone',
+  // English - Disposable
+  'paper towel', 'wipe', 'wipes', 'kimwipe', 'weighing boat', 'weigh boat', 'filter paper',
+  'aluminum foil', 'biohazard bag', 'waste container', 'sharps container', 'autoclave bag',
+  'syringe', 'needle', 'blade', 'scalpel', 'forceps', 'tweezer', 'spatula',
+  'wash bottle', 'spray bottle', 'ph paper', 'tape', 'label',
+  // Italiano - Glassware
+  'bottiglia', 'beuta', 'beute', 'duran',
+  // English - Glassware
+  'graduated cylinder', 'volumetric flask', 'borosilicate', 'glass vial', 'test tube',
+  'erlenmeyer', 'reagent bottle', 'media bottle', 'beaker', 'funnel',
+  // Italiano - Stampati
   'penna', 'toner', 'cancelleria', 'busta',
+  // English - Stationery
+  'pen', 'pencil', 'notebook', 'binder', 'stationery',
+  // Italiano - Equipment
   'microscopio', 'centrifuga', 'vortex', 'bilancia', 'incubatore', 'autoclave',
   'freezer', 'frigorifero', 'bagnetto', 'stufa', 'termociclatore',
   'laptop', 'computer', 'stampante', 'monitor', 'mouse', 'tastiera',
+  // English - Equipment
+  'ph meter', 'balance', 'scale', 'water bath', 'dry bath', 'heat block',
+  'shaker', 'orbital shaker', 'rocker', 'rotator', 'gel imager', 'transilluminator',
+  'centrifuge', 'fume hood', 'laminar flow', 'biosafety cabinet', 'magnetic stirrer',
+  'hot plate', 'sonicator', 'homogenizer', 'thermocycler', 'microscope', 'incubator',
+  // Italiano - Animali
   'gabbia', 'lettiera', 'mangime', 'bedding',
-  'bottiglia', 'beuta', 'beute', 'duran',
+  // English - Animal
+  'cage', 'mouse cage', 'rodent diet',
+  // Italiano - Gas/Cryo
   'ghiaccio secco', 'azoto liquido', 'bombola', 'gas',
-  'dpi', 'protezione', 'sicurezza',
-  'terreno', 'terreni', 'medium', 'media',
-  'siero', 'sieri', 'serum',
+  // Italiano/English - Reagenti comuni
+  'terreno', 'terreni', 'medium', 'media', 'siero', 'sieri', 'serum',
   'marker', 'ladder', 'agarosio', 'agarose',
 ]);
 
@@ -556,81 +592,350 @@ const categories = [
 // ═══════════════════════════════════════════════════════════════════════════════
 
 const categoryKeywords = {
-  // 1 - Plasticware
-  'Plasticware|Tips': ['puntali', 'puntale', 'tips', 'tip', 'filter tip', 'filtered tip', 'puntali filtro', 'puntali senza filtro', 'art tips', 'tips with filter'],
-  'Plasticware|Tubes': ['tubi', 'tubes', 'tube', 'eppendorf', 'falcon', 'provetta', 'provette', 'microtube', '15ml', '50ml', '1.5ml', '0.5ml', 'pcr tube', 'deep well'],
-  'Plasticware|Stripette': ['stripette', 'pipetta sierologica', 'serological pipette'],
-  'Plasticware|Petri dish': ['petri', 'piastra petri', 'petri dish', 'capsule petri'],
-  'Plasticware|Multiwell': ['multiwell', 'multi-well', '96 well', '24 well', '12 well', '6 well', '48 well', '384 well', 'well plate', 'piastra', 'piastre', 'plate'],
-  'Plasticware|Fiasche tappo ventilato': ['fiasca', 'flask', 'fiasche', 'ventilato', 'vented', 'cell culture flask', 't25', 't75', 't175', 't225'],
-  'Plasticware|Fiasche tappo non ventilato': ['non ventilato', 'non-vented', 'sealed flask'],
-  'Plasticware|Cell Scrapers': ['scraper', 'cell scraper', 'raschietto'],
-  'Plasticware|Cell strainers': ['strainer', 'cell strainer', 'filtro cellule'],
-  'Plasticware|Cell Stack': ['cell stack', 'cellstack', 'corning cellstack'],
-  'Plasticware|Filters': ['stericup', 'steritop', 'filtro bicchiere', 'vacuum filter', 'bottle top filter', 'filtro', 'filter unit', 'syringe filter'],
-  'Plasticware|Cryovials': ['cryovial', 'criotubo', 'criovial', 'cryogenic vial'],
-  'Plasticware|Counting Slides': ['counting slide', 'camera conta', 'countess slide'],
-  'Plasticware|Vials': ['vial', 'vials', 'flaconcino'],
-  'Plasticware|Multipette': ['multipette', 'combitip', 'dispensatore'],
-  'Plasticware|Cuvette': ['cuvetta', 'cuvette'],
+  // ── 1 - PLASTICWARE ────────────────────────────────────────────────────────
+  'Plasticware|Tips': [
+    'puntali', 'puntale', 'tips', 'tip', 'filter tip', 'filtered tip', 'puntali filtro', 'puntali senza filtro', 'art tips', 'tips with filter',
+    'pipette tip', 'pipette tips', 'barrier tip', 'barrier tips', 'gel loading tip', 'gel loading tips',
+    'low retention', 'extended length tip', 'wide bore tip', 'universal tip', 'sterile tip', 'sterile tips'
+  ],
+  'Plasticware|Tubes': [
+    'tubi', 'tubes', 'tube', 'eppendorf', 'falcon', 'provetta', 'provette', 'microtube', '15ml', '50ml', '1.5ml', '0.5ml', 'pcr tube', 'deep well',
+    'centrifuge tube', 'centrifuge tubes', 'conical tube', 'conical tubes', 'microcentrifuge tube', 'microcentrifuge tubes',
+    'snap cap tube', 'snap cap', 'screw cap tube', 'screw cap', 'sample tube', 'collection tube', 'reaction tube',
+    'safe lock tube', '0.2ml', '2ml', '5ml', 'micro tube'
+  ],
+  'Plasticware|Stripette': [
+    'stripette', 'pipetta sierologica', 'serological pipette', 'serological pipettes',
+    'aspirating pipette', 'graduated pipette'
+  ],
+  'Plasticware|Petri dish': [
+    'petri', 'piastra petri', 'petri dish', 'capsule petri', 'petri dishes',
+    'culture dish', 'bacteriological dish', 'treated dish', 'untreated dish'
+  ],
+  'Plasticware|Multiwell': [
+    'multiwell', 'multi-well', '96 well', '24 well', '12 well', '6 well', '48 well', '384 well', 'well plate', 'piastra', 'piastre', 'plate',
+    'cell culture plate', 'culture plate', 'assay plate', 'tissue culture plate',
+    'flat bottom plate', 'round bottom plate', 'u-bottom plate', 'v-bottom plate',
+    'black plate', 'white plate', 'clear plate', 'pcr plate', 'deep well plate',
+    'microplate', 'microtiter plate'
+  ],
+  'Plasticware|Fiasche tappo ventilato': [
+    'fiasca', 'flask', 'fiasche', 'ventilato', 'vented', 'cell culture flask', 't25', 't75', 't175', 't225',
+    'tissue culture flask', 'culture flask', 'vented flask', 'vented cap flask', 't-flask', 'plug seal'
+  ],
+  'Plasticware|Fiasche tappo non ventilato': ['non ventilato', 'non-vented', 'sealed flask', 'closed cap flask'],
+  'Plasticware|Cell Scrapers': ['scraper', 'cell scraper', 'raschietto', 'cell lifter'],
+  'Plasticware|Cell strainers': ['strainer', 'cell strainer', 'filtro cellule', 'mesh strainer', 'nylon mesh', 'cell sieve'],
+  'Plasticware|Cell Stack': ['cell stack', 'cellstack', 'corning cellstack', 'cell factory'],
+  'Plasticware|Filters': [
+    'stericup', 'steritop', 'filtro bicchiere', 'vacuum filter', 'bottle top filter', 'filtro', 'filter unit', 'syringe filter',
+    'membrane filter', 'pvdf filter', 'pes filter', 'nylon filter', 'ptfe filter',
+    '0.22um filter', '0.45um filter', 'sterile filter', 'filtration unit',
+    'centrifugal filter', 'amicon', 'spin column', '0.22 um', '0.45 um'
+  ],
+  'Plasticware|Cryovials': [
+    'cryovial', 'criotubo', 'criovial', 'cryogenic vial',
+    'cryogenic tube', 'cryo tube', 'cryotube', 'freezing vial',
+    'internal thread cryo', 'external thread cryo'
+  ],
+  'Plasticware|Counting Slides': ['counting slide', 'camera conta', 'countess slide', 'counting chamber', 'hemocytometer'],
+  'Plasticware|Vials': ['vial', 'vials', 'flaconcino', 'sample vial', 'storage vial', 'scintillation vial'],
+  'Plasticware|Multipette': ['multipette', 'combitip', 'dispensatore', 'repeater pipette', 'repeating pipette'],
+  'Plasticware|Cuvette': [
+    'cuvetta', 'cuvette',
+    'spectrophotometer cuvette', 'uv cuvette', 'disposable cuvette', 'quartz cuvette',
+    'semi-micro cuvette', 'macro cuvette'
+  ],
   'Plasticware|Slides': ['slide plastica', 'vetrino plastica', 'plastic slide'],
-  'Plasticware|Strips': ['strip', 'strips', 'pcr strip'],
-  'Plasticware|Chamber slides': ['chamber slide', 'lab-tek', 'ibidi slide', 'camera coltura'],
-  'Plasticware|Pipette monocanale': ['pipetta', 'pipette', 'monocanale', 'single channel', 'micropipetta'],
-  'Plasticware|Pipette multicanale': ['multicanale', 'multichannel', '8 canali', '12 canali'],
-  'Plasticware|Liquid handling consumables': ['liquid handling', 'reservoir', 'serbatoio'],
-  // 2 - Glassware
-  'Glassware|Glassware': ['bottiglia vetro', 'glass bottle', 'bottle', 'duran', 'schott', 'beuta', 'erlenmeyer', 'beute', 'matraccio', 'cilindro graduato', 'glassware', 'vetro laboratorio'],
-  'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)': ['vetrino', 'vetrini', 'glass slide', 'coprioggetto', 'portaoggetto', 'coverslip', 'microscope slide', 'vetrini portaoggetto', 'superfrost', 'superfrost plus', 'polysine', 'starfrost', 'histobond', 'menzel', 'matsunami', 'slide', 'slides', 'frosted slide', 'charged slide', 'adhesion slide'],
-  'Glassware|Altro (Pasteur, dish vetro, ecc)': ['pasteur', 'pipetta pasteur', 'dish vetro', 'glass dish'],
-  // 3 - Disposable
-  'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc': ['guanti', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari', 'sopracalzari', 'dpi', 'guanto', 'protezione'],
-  'Disposable|BIOHAZARD - (RIFIUTI SPECIALI)': ['biohazard', 'rifiuti', 'buste', 'sacchetti rifiuti', 'waste bag', 'rifiuti speciali'],
-  'Disposable|CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box': ['cryobox', 'parafilm', 'contenitore pcr', 'box campioni', 'rack', 'scatola congelamento', 'cryoboxes'],
-  'Disposable|Disposable: nastro autoclave, carta da banco, carta rotoli, cartine Ph, spruzzette, pinze ed accessori di precisione, aghi, lame, siringhe, anse, lame, detergenti, alcool etc': ['nastro', 'autoclave tape', 'carta banco', 'carta rotoli', 'spruzzetta', 'siringa', 'syringe', 'ago', 'needle', 'lama', 'blade', 'ansa', 'loop', 'detergente', 'alcool', 'ethanol', 'isopropanol', 'cartine ph', 'pinze'],
-  'Disposable|Sicurezza sul lavoro (sicurezza generale)': ['sicurezza lavoro', 'safety', 'estintore', 'primo soccorso', 'first aid'],
-  // 4 - Stampati
-  'Stampati|Materiale generico vario': ['penna', 'carta', 'busta', 'toner', 'cancelleria', 'post-it', 'block notes', 'materiale ufficio'],
-  'Stampati|Riviste': ['rivista', 'journal', 'abbonamento rivista', 'subscription'],
-  'Stampati|Pubblicazioni': ['pubblicazione', 'publication', 'libro', 'book', 'manuale'],
-  // 5 - Equipments, Arredi & IT
-  'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro': ['microscopio', 'microscope', 'gel doc', 'chemidoc', 'phmetro', 'spettrofotometro', 'spectrophotometer', 'nanodrop', 'power supply', 'bilancia', 'cell counter', 'facs', 'citofluorimetro', 'flow cytometer', 'luminometro', 'fluorimetro', 'plate reader'],
-  'Equipments, Arredi & IT|Apparecchiatura Elettromeccanica Ricerca: Centrifughe, Ultracentrifughe, Vortex, Robot Liquid Handling': ['centrifuga', 'centrifuge', 'ultracentrifuga', 'vortex', 'robot', 'liquid handler', 'hamilton', 'biomek'],
-  'Equipments, Arredi & IT|Apparecchiatura Termoregolatore Ricerca: Freezer, Frigoriferi, Thermomixer, Contenitore criogenico, Bagnetti termostatati, Stufe, PCR, Real Time, Incubatori, Produttori ghiaccio, Autoclavi, Stirrer': ['freezer', 'frigorifero', 'thermomixer', 'azoto liquido', 'bagnetto', 'water bath', 'stufa', 'oven', 'termociclatore', 'thermal cycler', 'pcr machine', 'incubatore', 'incubator', 'autoclave', 'stirrer', 'ghiaccio', 'ice machine'],
-  'Equipments, Arredi & IT|Arredi Ufficio': ['scrivania', 'sedia ufficio', 'armadio ufficio', 'arredi ufficio'],
-  'Equipments, Arredi & IT|Arredi Laboratorio': ['banco laboratorio', 'cappa', 'fume hood', 'arredi laboratorio', 'scaffale lab'],
-  'Equipments, Arredi & IT|Manutenzione apparecchiature ricerca (Taratura, PQ, IQ, OQ - Contratti di manutenzione)': ['taratura', 'calibrazione', 'manutenzione', 'maintenance', 'contratto manutenzione', 'iq', 'oq', 'pq'],
+  'Plasticware|Strips': [
+    'strip', 'strips', 'pcr strip', 'pcr strips',
+    '8-strip', '8 strip', 'strip tube', 'strip cap', 'optical strip',
+    'flat cap strip', 'domed cap strip'
+  ],
+  'Plasticware|Chamber slides': [
+    'chamber slide', 'lab-tek', 'ibidi slide', 'camera coltura',
+    'culture slide', 'slide flask', 'chamber well', '2 chamber', '4 chamber', '8 chamber',
+    'ibidi', 'nunc chamber'
+  ],
+  'Plasticware|Pipette monocanale': [
+    'pipetta', 'pipette', 'monocanale', 'single channel', 'micropipetta',
+    'single channel pipette', 'manual pipette', 'adjustable pipette',
+    'variable volume pipette', 'fixed volume pipette', 'electronic pipette'
+  ],
+  'Plasticware|Pipette multicanale': [
+    'multicanale', 'multichannel', '8 canali', '12 canali',
+    'multichannel pipette', 'multi channel pipette', '8 channel', '12 channel', '8-channel', '12-channel'
+  ],
+  'Plasticware|Liquid handling consumables': [
+    'liquid handling', 'reservoir', 'serbatoio',
+    'reagent reservoir', 'trough', 'pipetting reservoir', 'automation tip', 'robotic tip'
+  ],
+
+  // ── 2 - GLASSWARE ──────────────────────────────────────────────────────────
+  'Glassware|Glassware': [
+    'bottiglia vetro', 'glass bottle', 'bottle', 'duran', 'schott', 'beuta', 'erlenmeyer', 'beute', 'matraccio', 'cilindro graduato', 'glassware', 'vetro laboratorio',
+    'graduated cylinder', 'measuring cylinder', 'volumetric flask', 'borosilicate',
+    'glass vial', 'glass vials', 'test tube', 'test tubes', 'reagent bottle',
+    'media bottle', 'wash bottle', 'aspirator bottle', 'round bottom flask',
+    'flat bottom flask', 'funnel', 'glass funnel', 'separating funnel', 'buchner funnel',
+    'glass beaker', 'beaker', 'desiccator', 'watch glass', 'stirring rod', 'glass rod'
+  ],
+  'Glassware|Glass slides (vetrini di tutti i tipi: portaoggetto, coprioggetto, ecc)': [
+    'vetrino', 'vetrini', 'glass slide', 'coprioggetto', 'portaoggetto', 'coverslip', 'microscope slide', 'vetrini portaoggetto',
+    'superfrost', 'superfrost plus', 'polysine', 'starfrost', 'histobond', 'menzel', 'matsunami',
+    'slide', 'slides', 'frosted slide', 'charged slide', 'adhesion slide',
+    'cover glass', 'cover slip', 'microscopy slide'
+  ],
+  'Glassware|Altro (Pasteur, dish vetro, ecc)': [
+    'pasteur', 'pipetta pasteur', 'dish vetro', 'glass dish',
+    'glass pasteur', 'pasteur pipette', 'pasteur pipet', 'glass petri',
+    'capillary tube', 'capillary tubes', 'glass capillary', 'melting point tube'
+  ],
+
+  // ── 3 - DISPOSABLE ─────────────────────────────────────────────────────────
+  'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc': [
+    'guanti', 'gloves', 'nitrile', 'lattice', 'camice', 'camici', 'calzari', 'sopracalzari', 'dpi', 'guanto', 'protezione',
+    'glove', 'latex glove', 'latex gloves', 'nitrile glove', 'nitrile gloves',
+    'disposable glove', 'disposable gloves', 'exam glove', 'exam gloves',
+    'powder free', 'powder-free', 'vinyl glove', 'vinyl gloves', 'latex',
+    'lab coat', 'laboratory coat', 'disposable gown', 'isolation gown',
+    'ppe', 'personal protective equipment',
+    'safety goggles', 'goggles', 'safety glasses', 'protective eyewear',
+    'overshoe', 'overshoes', 'shoe cover', 'shoe covers', 'boot cover', 'boot covers',
+    'face mask', 'surgical mask', 'face shield',
+    'hairnet', 'hair net', 'bouffant cap', 'head cover',
+    'ear plug', 'ear plugs', 'hearing protection',
+    'respirator', 'n95', 'ffp2', 'ffp3',
+    'disposable apron', 'sleeve cover', 'arm cover',
+    'protective clothing', 'lab safety'
+  ],
+  'Disposable|BIOHAZARD - (RIFIUTI SPECIALI)': [
+    'biohazard', 'rifiuti', 'buste', 'sacchetti rifiuti', 'waste bag', 'rifiuti speciali',
+    'biohazard bag', 'biohazard bags', 'autoclave bag', 'autoclave bags',
+    'waste bags', 'sharps container', 'sharps bin', 'sharps disposal',
+    'waste container', 'biohazard container', 'clinical waste', 'infectious waste',
+    'spill kit', 'biohazard label', 'waste disposal'
+  ],
+  'Disposable|CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box': [
+    'cryobox', 'parafilm', 'contenitore pcr', 'box campioni', 'rack', 'scatola congelamento', 'cryoboxes',
+    'sample storage', 'freezer box', 'freezer rack', 'cryo box', 'cryo rack',
+    'storage box', 'tube rack', 'tube holder', 'pcr rack', 'microcentrifuge rack',
+    'ice bucket', 'ice pan', 'benchtop cooler', 'cool rack', 'vial rack', 'sample box'
+  ],
+  'Disposable|Disposable: nastro autoclave, carta da banco, carta rotoli, cartine Ph, spruzzette, pinze ed accessori di precisione, aghi, lame, siringhe, anse, lame, detergenti, alcool etc': [
+    'nastro', 'autoclave tape', 'carta banco', 'carta rotoli', 'spruzzetta', 'siringa', 'syringe', 'ago', 'needle', 'lama', 'blade', 'ansa', 'loop', 'detergente', 'alcool', 'ethanol', 'isopropanol', 'cartine ph', 'pinze',
+    'paper towel', 'paper towels', 'bench paper', 'bench protector',
+    'wipe', 'wipes', 'kimwipe', 'kim wipe', 'lens paper', 'tissue paper',
+    'weighing boat', 'weigh boat', 'weighing paper', 'weighing dish',
+    'aluminum foil', 'aluminium foil', 'tin foil',
+    'filter paper', 'absorbent pad',
+    'inoculation loop', 'inoculating loop', 'spreader', 'cell spreader',
+    'scalpel', 'scalpel blade', 'disposable scalpel', 'razor blade',
+    'forceps', 'tweezer', 'tweezers', 'precision forceps',
+    'hypodermic needle', 'needles', 'syringes', 'blunt needle',
+    'ph paper', 'ph strip', 'ph indicator', 'litmus paper',
+    'wash bottle', 'squeeze bottle', 'spray bottle',
+    'sealing film', 'plate seal', 'adhesive seal', 'optical seal',
+    'tape', 'autoclave indicator', 'sterilization indicator',
+    'lab marker', 'cryo marker', 'permanent marker',
+    'spatula', 'micro spatula', 'lab spatula',
+    'disposable funnel', 'powder funnel', 'cleaning solution', 'disinfectant'
+  ],
+  'Disposable|Sicurezza sul lavoro (sicurezza generale)': [
+    'sicurezza lavoro', 'safety', 'estintore', 'primo soccorso', 'first aid',
+    'first aid kit', 'eyewash', 'eye wash', 'emergency shower',
+    'fire extinguisher', 'safety sign', 'safety shower',
+    'chemical spill kit', 'absorbent', 'safety cabinet',
+    'lab safety', 'safety station', 'decontamination'
+  ],
+
+  // ── 4 - STAMPATI ───────────────────────────────────────────────────────────
+  'Stampati|Materiale generico vario': [
+    'penna', 'carta', 'busta', 'toner', 'cancelleria', 'post-it', 'block notes', 'materiale ufficio',
+    'pen', 'pencil', 'label', 'labels', 'notebook', 'binder', 'printer paper', 'stapler', 'folder',
+    'office supply', 'stationery'
+  ],
+  'Stampati|Riviste': ['rivista', 'journal', 'abbonamento rivista', 'subscription', 'journal subscription'],
+  'Stampati|Pubblicazioni': ['pubblicazione', 'publication', 'libro', 'book', 'manuale', 'textbook', 'manual'],
+
+  // ── 5 - EQUIPMENTS, ARREDI & IT ───────────────────────────────────────────
+  'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro': [
+    'microscopio', 'microscope', 'gel doc', 'chemidoc', 'phmetro', 'spettrofotometro', 'spectrophotometer', 'nanodrop', 'power supply', 'bilancia', 'cell counter', 'facs', 'citofluorimetro', 'flow cytometer', 'luminometro', 'fluorimetro', 'plate reader',
+    'ph meter', 'ph electrode', 'conductivity meter', 'balance', 'analytical balance',
+    'precision balance', 'scale', 'laboratory scale', 'microbalance',
+    'gel imager', 'gel imaging', 'imaging system', 'transilluminator', 'uv transilluminator',
+    'fluorometer', 'luminometer', 'multimode reader', 'microplate reader',
+    'electrophoresis', 'electrophoresis system', 'gel electrophoresis',
+    'colony counter', 'densitometer', 'refractometer', 'osmometer',
+    'real time pcr system', 'qpcr machine', 'digital pcr', 'flow cytometry'
+  ],
+  'Equipments, Arredi & IT|Apparecchiatura Elettromeccanica Ricerca: Centrifughe, Ultracentrifughe, Vortex, Robot Liquid Handling': [
+    'centrifuga', 'centrifuge', 'ultracentrifuga', 'vortex', 'robot', 'liquid handler', 'hamilton', 'biomek',
+    'microcentrifuge', 'mini centrifuge', 'benchtop centrifuge', 'floor centrifuge',
+    'high speed centrifuge', 'refrigerated centrifuge',
+    'shaker', 'orbital shaker', 'platform shaker', 'rocker', 'nutating mixer',
+    'rotator', 'tube rotator', 'overhead stirrer',
+    'sonicator', 'ultrasonic bath', 'homogenizer', 'bead beater', 'tissue lyser',
+    'vacuum pump', 'peristaltic pump', 'syringe pump'
+  ],
+  'Equipments, Arredi & IT|Apparecchiatura Termoregolatore Ricerca: Freezer, Frigoriferi, Thermomixer, Contenitore criogenico, Bagnetti termostatati, Stufe, PCR, Real Time, Incubatori, Produttori ghiaccio, Autoclavi, Stirrer': [
+    'freezer', 'frigorifero', 'thermomixer', 'azoto liquido', 'bagnetto', 'water bath', 'stufa', 'oven', 'termociclatore', 'thermal cycler', 'pcr machine', 'incubatore', 'incubator', 'autoclave', 'stirrer', 'ghiaccio', 'ice machine',
+    'dry bath', 'heat block', 'heating block', 'dry block heater',
+    'hot plate', 'hotplate', 'magnetic stirrer', 'stir plate',
+    'shaking water bath', 'circulating bath',
+    'hybridization oven', 'drying oven', 'vacuum oven',
+    'cryogenic storage', 'liquid nitrogen tank', 'dewar', 'cryo tank',
+    'ice maker', 'flake ice machine', 'co2 incubator', 'shaking incubator',
+    'thermocycler', 'gradient thermocycler',
+    'cold room', 'ultra low freezer', 'chest freezer', '-80 freezer', '-20 freezer',
+    'fridge', 'refrigerator', 'cryostat'
+  ],
+  'Equipments, Arredi & IT|Arredi Ufficio': ['scrivania', 'sedia ufficio', 'armadio ufficio', 'arredi ufficio', 'office desk', 'office chair', 'office furniture'],
+  'Equipments, Arredi & IT|Arredi Laboratorio': [
+    'banco laboratorio', 'cappa', 'fume hood', 'arredi laboratorio', 'scaffale lab',
+    'laminar flow hood', 'laminar flow cabinet', 'biosafety cabinet', 'bsc',
+    'clean bench', 'pcr hood', 'pcr cabinet', 'dead air box',
+    'lab bench', 'laboratory bench', 'lab table', 'lab shelving', 'lab cart',
+    'chemical storage cabinet', 'flammable cabinet', 'acid cabinet'
+  ],
+  'Equipments, Arredi & IT|Manutenzione apparecchiature ricerca (Taratura, PQ, IQ, OQ - Contratti di manutenzione)': [
+    'taratura', 'calibrazione', 'manutenzione', 'maintenance', 'contratto manutenzione', 'iq', 'oq', 'pq',
+    'calibration', 'validation', 'equipment certification', 'service contract', 'preventive maintenance'
+  ],
   'Equipments, Arredi & IT|Hardware': ['pc', 'laptop', 'computer', 'desktop', 'stampante', 'printer', 'monitor', 'tastiera', 'keyboard', 'hardware'],
-  'Equipments, Arredi & IT|Software': ['software', 'licenza', 'license', 'abbonamento software'],
-  'Equipments, Arredi & IT|Materiale informatico': ['mouse', 'toner', 'cartuccia', 'cavo', 'hard disk', 'ssd', 'usb', 'materiale informatico'],
-  'Equipments, Arredi & IT|Manutenzione hardware': ['manutenzione hardware', 'riparazione pc', 'assistenza tecnica'],
-  'Equipments, Arredi & IT|Accessori Apparecchiature': ['accessorio', 'rotore', 'rotor', 'obiettivo', 'filtro ottico', 'lampada', 'accessori apparecchiature'],
-  // 6 - Lab Reagents
-  'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.': ['kit', 'estrazione', 'extraction', 'purificazione', 'purification', 'luciferase', 'elisa', 'miniprep', 'maxiprep', 'midiprep', 'rneasy', 'dneasy', 'blood kit', 'tissue kit', 'enrichment', 'depletion', 'isolation kit', 'detection kit'],
-  'Lab Reagents|Molecular Biology': ['taq', 'polymerase', 'agarosio', 'agarose', 'dna marker', 'rna marker', 'ladder', 'loading dye', 'pcr master', 'dreamtaq', 'phusion', 'q5', 'sybr', 'taqman', 'probe', 'real time', 'qpcr', 'rt-pcr', 'mastermix', 'power sybr', 'competenti', 'competent cell', 'clonaggio', 'cloning', 'gateway', 'topo', 'gibson', 'ligation', 'ligasi', 'enzima restrizione', 'restriction enzyme', 'ecori', 'bamhi', 'hindiii', 'xhoi', 'noti', 'ligase', 'fosfatasi', 'chinasi', 'phosphatase', 'kinase', 'nuclease', 'dnase', 'rnase', 'deoxyribonuclease', 'ribonuclease', 'endonuclease', 'exonuclease', 'topoisomerase', 'reverse transcriptase', 'benzonase', 'turbo dnase', 'proteinase k', 'molecular biology', 'buffer pcr', 'dna polymerase', 'rna polymerase', 'crispr', 'cas9', 'caspase', 'trypsin', 'dispase', 'collagenase'],
-  'Lab Reagents|NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.': ['ngs', 'next gen', 'libreria', 'library prep', 'frammentazione', 'nextera', 'truseq', 'illumina kit', 'sequencing kit', 'sanger', 'sequenziamento', 'sequencing', 'genewiz', 'eurofins sequencing'],
-  'Lab Reagents|Synthesis: oligos, siRNA, peptide, plasmids, genes': ['oligo', 'oligonucleotide', 'primer', 'primers', 'custom oligo', 'idt', 'sirna', 'shrna', 'mirna', 'grna', 'sgrna', 'antisense', 'morpholino', 'sintesi gene', 'gene synthesis', 'peptide synthesis', 'plasmide', 'plasmid', 'gblock', 'custom gene'],
-  'Lab Reagents|Cell Biology': ['fbs', 'fcs', 'siero', 'serum', 'fetal bovine', 'horse serum', 'siero fetale', 'dmem', 'rpmi', 'mem', 'terreno', 'medium', 'media', 'iscove', 'f12', 'ham', 'glutamine', 'glutamax', 'pen/strep', 'penicillina', 'streptomicina', 'b27', 'supplement', 'additivo', 'neaa', 'amino acid', 'trasfezione', 'transfection', 'lipofectamine', 'lipofection', 'electroporation', 'nucleofection', 'fugene', 'trizol', 'cell biology', 'coltura cellulare', 'matrigel', 'geltrex', 'coating'],
-  'Lab Reagents|CITOCHINE e fattori di crescita': ['citochina', 'cytokine', 'growth factor', 'fattore crescita', 'il-2', 'il-6', 'tnf', 'ifn', 'vegf', 'egf', 'fgf', 'bmp', 'wnt', 'scf', 'interleukin', 'chemokine', 'interferon', 'pdgf', 'tgf'],
-  'Lab Reagents|Protein': ['proteina', 'protein', 'western blot reagent', 'bradford', 'bca assay', 'page', 'gel elettroforesi', 'transfer', 'blocking', 'proteomica', 'proteomics', 'mass spec'],
-  'Lab Reagents|ANTICORPI': ['anticorpo', 'antibody', 'western blot', 'wb', 'primary antibody', 'secondary antibody', 'hrp', 'anti-', 'ihc', 'immunoistochimica', 'immunohistochemistry', 'paraffin', 'immunoprecipitazione', 'ip', 'co-ip', 'chip', 'pulldown', 'pull-down', 'immunofluorescenza', 'immunofluorescence', 'alexa fluor', 'fitc', 'pe ', 'apc', 'anticorpi', 'monoclonal', 'polyclonal'],
-  'Lab Reagents|CHEMICALS': ['polvere', 'powder', 'chemical', 'reagente', 'reagent', 'tris', 'nacl', 'edta', 'sds', 'dtt', 'bsa', 'agar', 'solvente', 'solvent', 'metanolo', 'methanol', 'acetone', 'cloroformio', 'dmso', 'dmf', 'etanolo', 'xilene', 'chemicals'],
-  'Lab Reagents|GAS': ['gas', 'co2', 'azoto', 'nitrogen', 'ossigeno', 'oxygen', 'bombola'],
-  'Lab Reagents|GMP (Reagenti grado GMP per produzioni farmaceutiche)': ['gmp', 'grado gmp', 'gmp grade', 'pharmaceutical grade'],
-  'Lab Reagents|Clinical and Pre-Clinical': ['clinical', 'pre-clinical', 'preclinical', 'trial', 'gcp'],
-  'Lab Reagents|Histology': ['istologia', 'histology', 'paraffina', 'embedding', 'microtomo', 'microtome', 'colorazione', 'ematossilina', 'eosina', 'h&e'],
-  // 7 - Animal housing
-  'Animal housing|ACQUISTO ANIMALI': ['topi', 'mice', 'mouse', 'ratto', 'rat', 'animale', 'animal', 'jackson lab', 'charles river animal', 'acquisto animali'],
-  'Animal housing|MATERIALI DI CONSUMO Animali (farmaci, diete)': ['gabbia', 'cage', 'bedding', 'lettiera', 'mangime', 'food pellet', 'dieta animali', 'farmaci animali'],
-  'Animal housing|STABULAZIONE': ['stabulazione', 'stabulario', 'animal facility', 'housing'],
-  // 8 - SERVIZI
-  'SERVIZI|Logistica': ['logistica', 'trasporto', 'spedizione', 'corriere', 'shipping'],
-  'SERVIZI|Consulenze Ricerca': ['consulenza ricerca', 'research consulting', 'cro', 'contract research'],
-  'SERVIZI|Consulenze generiche': ['consulenza', 'consulting', 'consulente'],
-  'SERVIZI|Pharma': ['pharma', 'farmaceutica', 'pharmaceutical'],
-  'SERVIZI|Traduzioni': ['traduzione', 'translation', 'interpretariato'],
-  'SERVIZI|Supply Chain': ['supply chain', 'approvvigionamento'],
-  'SERVIZI|Servizi di Ricerca': ['servizio ricerca', 'research service', 'outsourcing ricerca'],
+  'Equipments, Arredi & IT|Software': ['software', 'licenza', 'license', 'abbonamento software', 'software license', 'software subscription'],
+  'Equipments, Arredi & IT|Materiale informatico': ['mouse', 'toner', 'cartuccia', 'cavo', 'hard disk', 'ssd', 'usb', 'materiale informatico', 'cable', 'adapter', 'charger'],
+  'Equipments, Arredi & IT|Manutenzione hardware': ['manutenzione hardware', 'riparazione pc', 'assistenza tecnica', 'hardware repair', 'technical support'],
+  'Equipments, Arredi & IT|Accessori Apparecchiature': [
+    'accessorio', 'rotore', 'rotor', 'obiettivo', 'filtro ottico', 'lampada', 'accessori apparecchiature',
+    'centrifuge rotor', 'bucket', 'objective lens', 'microscope objective',
+    'filter set', 'optical filter', 'light source', 'microscope camera',
+    'electrode', 'probe', 'sensor', 'tubing', 'connector', 'fitting'
+  ],
+
+  // ── 6 - LAB REAGENTS ──────────────────────────────────────────────────────
+  'Lab Reagents|KIT: Estrazione, purificazione, luciferase assay, kit vitalità, Elisa, enrichment, depletion, etc.': [
+    'kit', 'estrazione', 'extraction', 'purificazione', 'purification', 'luciferase', 'elisa', 'miniprep', 'maxiprep', 'midiprep', 'rneasy', 'dneasy', 'blood kit', 'tissue kit', 'enrichment', 'depletion', 'isolation kit', 'detection kit',
+    'extraction kit', 'purification kit', 'genomic dna extraction', 'plasmid preparation',
+    'rna isolation', 'protein isolation', 'cleanup kit', 'gel extraction', 'pcr cleanup',
+    'magnetic bead kit', 'column purification', 'spin kit'
+  ],
+  'Lab Reagents|Molecular Biology': [
+    'taq', 'polymerase', 'agarosio', 'agarose', 'dna marker', 'rna marker', 'ladder', 'loading dye', 'pcr master', 'dreamtaq', 'phusion', 'q5', 'sybr', 'taqman', 'probe', 'real time', 'qpcr', 'rt-pcr', 'mastermix', 'power sybr', 'competenti', 'competent cell', 'clonaggio', 'cloning', 'gateway', 'topo', 'gibson', 'ligation', 'ligasi', 'enzima restrizione', 'restriction enzyme', 'ecori', 'bamhi', 'hindiii', 'xhoi', 'noti', 'ligase', 'fosfatasi', 'chinasi', 'phosphatase', 'kinase', 'nuclease', 'dnase', 'rnase', 'deoxyribonuclease', 'ribonuclease', 'endonuclease', 'exonuclease', 'topoisomerase', 'reverse transcriptase', 'benzonase', 'turbo dnase', 'proteinase k', 'molecular biology', 'buffer pcr', 'dna polymerase', 'rna polymerase', 'crispr', 'cas9', 'caspase', 'trypsin', 'dispase', 'collagenase',
+    'taq dna polymerase', 'hot start polymerase', 'high fidelity polymerase',
+    'dna ladder', 'rna ladder', 'dna gel', 'gel stain', 'ethidium bromide', 'sybr safe', 'gel red',
+    'transformation', 'competent cells', 'electrocompetent',
+    'dna ligase', 't4 ligase', 'blunt end ligation',
+    'enzyme', 'restriction digest', 'digest', 'digestion'
+  ],
+  'Lab Reagents|NGS - Sanger sequencing: preparazione di librerie, purificazione, frammentazione, ecc.': [
+    'ngs', 'next gen', 'libreria', 'library prep', 'frammentazione', 'nextera', 'truseq', 'illumina kit', 'sequencing kit', 'sanger', 'sequenziamento', 'sequencing', 'genewiz', 'eurofins sequencing',
+    'next generation sequencing', 'library preparation', 'fragmentation', 'adapter',
+    'index', 'barcode', 'multiplex', 'pooling', 'size selection',
+    'ampure', 'spri beads', 'tagmentation'
+  ],
+  'Lab Reagents|Synthesis: oligos, siRNA, peptide, plasmids, genes': [
+    'oligo', 'oligonucleotide', 'primer', 'primers', 'custom oligo', 'idt', 'sirna', 'shrna', 'mirna', 'grna', 'sgrna', 'antisense', 'morpholino', 'sintesi gene', 'gene synthesis', 'peptide synthesis', 'plasmide', 'plasmid', 'gblock', 'custom gene',
+    'custom primer', 'probe synthesis', 'modified oligo', 'phosphorothioate',
+    'rnai', 'gene silencing', 'knockdown', 'guide rna',
+    'expression vector', 'lentiviral vector', 'aav vector', 'viral vector'
+  ],
+  'Lab Reagents|Cell Biology': [
+    'fbs', 'fcs', 'siero', 'serum', 'fetal bovine', 'horse serum', 'siero fetale', 'dmem', 'rpmi', 'mem', 'terreno', 'medium', 'media', 'iscove', 'f12', 'ham', 'glutamine', 'glutamax', 'pen/strep', 'penicillina', 'streptomicina', 'b27', 'supplement', 'additivo', 'neaa', 'amino acid', 'trasfezione', 'transfection', 'lipofectamine', 'lipofection', 'electroporation', 'nucleofection', 'fugene', 'trizol', 'cell biology', 'coltura cellulare', 'matrigel', 'geltrex', 'coating',
+    'cell culture medium', 'growth medium', 'basal medium', 'complete medium',
+    'antibiotic antimycotic', 'penicillin streptomycin', 'gentamicin', 'amphotericin',
+    'trypsin edta', 'accutase', 'cell dissociation', 'detachment solution',
+    'poly-d-lysine', 'poly-l-lysine', 'fibronectin', 'laminin', 'collagen',
+    'cell counting', 'viability', 'live dead', 'calcein', 'mtt', 'mts', 'wst',
+    'cell freezing medium', 'cryopreservation', 'recovery medium',
+    'mycoplasma', 'mycoplasma test', 'plasmocin',
+    'stem cell', 'ipsc', 'differentiation', 'reprogramming',
+    'organoid', 'spheroid', '3d culture', 'fetal serum', 'dialyzed serum'
+  ],
+  'Lab Reagents|CITOCHINE e fattori di crescita': [
+    'citochina', 'cytokine', 'growth factor', 'fattore crescita', 'il-2', 'il-6', 'tnf', 'ifn', 'vegf', 'egf', 'fgf', 'bmp', 'wnt', 'scf', 'interleukin', 'chemokine', 'interferon', 'pdgf', 'tgf',
+    'recombinant cytokine', 'recombinant protein', 'igf', 'ngf', 'bdnf', 'gdnf',
+    'il-1', 'il-4', 'il-10', 'il-12', 'il-17', 'gm-csf', 'g-csf', 'm-csf',
+    'erythropoietin', 'thrombopoietin', 'leptin', 'adiponectin'
+  ],
+  'Lab Reagents|Protein': [
+    'proteina', 'protein', 'western blot reagent', 'bradford', 'bca assay', 'page', 'gel elettroforesi', 'transfer', 'blocking', 'proteomica', 'proteomics', 'mass spec',
+    'protein marker', 'protein ladder', 'molecular weight marker', 'prestained marker',
+    'sds-page', 'precast gel', 'bis-tris gel', 'tris-glycine gel',
+    'pvdf membrane', 'nitrocellulose membrane', 'transfer membrane',
+    'ecl', 'chemiluminescent', 'substrate', 'blotting paper',
+    'protein assay', 'lowry', 'coomassie assay',
+    'protein extraction', 'cell lysis', 'protease inhibitor', 'cocktail inhibitor',
+    'recombinant protein', 'purified protein', 'protein standard',
+    'his tag', 'gst tag', 'flag tag', 'strep tag',
+    'ni-nta', 'glutathione', 'affinity resin', 'protein a', 'protein g',
+    'magnetic beads', 'dynabeads', 'agarose beads', 'sepharose'
+  ],
+  'Lab Reagents|ANTICORPI': [
+    'anticorpo', 'antibody', 'western blot', 'wb', 'primary antibody', 'secondary antibody', 'hrp', 'anti-', 'ihc', 'immunoistochimica', 'immunohistochemistry', 'paraffin', 'immunoprecipitazione', 'ip', 'co-ip', 'chip', 'pulldown', 'pull-down', 'immunofluorescenza', 'immunofluorescence', 'alexa fluor', 'fitc', 'pe ', 'apc', 'anticorpi', 'monoclonal', 'polyclonal',
+    'antibodies', 'primary antibodies', 'secondary antibodies',
+    'conjugated antibody', 'unconjugated antibody', 'biotinylated antibody',
+    'isotype control', 'blocking peptide', 'normal serum',
+    'streptavidin', 'avidin', 'biotin',
+    'facs antibody', 'flow cytometry antibody',
+    'rabbit anti', 'mouse anti', 'goat anti', 'donkey anti', 'rat anti',
+    'cy3', 'cy5', 'pacific blue', 'brilliant violet', 'percp', 'pe-cy7', 'apc-cy7'
+  ],
+  'Lab Reagents|CHEMICALS': [
+    'polvere', 'powder', 'chemical', 'reagente', 'reagent', 'tris', 'nacl', 'edta', 'sds', 'dtt', 'bsa', 'agar', 'solvente', 'solvent', 'metanolo', 'methanol', 'acetone', 'cloroformio', 'dmso', 'dmf', 'etanolo', 'xilene', 'chemicals',
+    'sodium chloride', 'potassium chloride', 'calcium chloride', 'magnesium chloride',
+    'sodium hydroxide', 'hydrochloric acid', 'sulfuric acid', 'nitric acid',
+    'acetic acid', 'formic acid', 'phosphoric acid', 'citric acid',
+    'glycerol', 'glycine', 'sucrose', 'glucose', 'mannitol',
+    'formaldehyde', 'paraformaldehyde', 'pfa', 'glutaraldehyde',
+    'triton', 'tween', 'np-40', 'deoxycholate',
+    'beta-mercaptoethanol', 'bme', 'ampicillin', 'kanamycin', 'chloramphenicol',
+    'puromycin', 'blasticidin', 'hygromycin', 'g418', 'geneticin',
+    'iptg', 'x-gal', 'dapi', 'hoechst', 'propidium iodide',
+    'crystal violet', 'trypan blue', 'coomassie',
+    'staining solution', 'mounting medium', 'antifade',
+    'molecular grade water', 'nuclease free water', 'depc water',
+    'pbs', 'dpbs', 'hbss', 'hepes', 'tris-hcl', 'te buffer',
+    'running buffer', 'transfer buffer', 'blocking buffer', 'wash buffer',
+    'lysis buffer', 'ripa', 'laemmli', 'sample buffer'
+  ],
+  'Lab Reagents|GAS': ['gas', 'co2', 'azoto', 'nitrogen', 'ossigeno', 'oxygen', 'bombola', 'gas cylinder', 'compressed gas', 'argon', 'helium'],
+  'Lab Reagents|GMP (Reagenti grado GMP per produzioni farmaceutiche)': ['gmp', 'grado gmp', 'gmp grade', 'pharmaceutical grade', 'clinical grade', 'gmp reagent'],
+  'Lab Reagents|Clinical and Pre-Clinical': ['clinical', 'pre-clinical', 'preclinical', 'trial', 'gcp', 'clinical trial', 'clinical study', 'patient sample'],
+  'Lab Reagents|Histology': [
+    'istologia', 'histology', 'paraffina', 'embedding', 'microtomo', 'microtome', 'colorazione', 'ematossilina', 'eosina', 'h&e',
+    'tissue processing', 'tissue embedding', 'cassette', 'tissue cassette',
+    'cryosection', 'frozen section', 'cryomold',
+    'mounting medium', 'cover slipping', 'xylene substitute',
+    'antigen retrieval', 'citrate buffer antigen', 'deparaffinization',
+    'dab', 'chromogen', 'special stain', 'trichrome', 'pas stain', 'oil red',
+    'hematoxylin', 'eosin', 'safranin'
+  ],
+
+  // ── 7 - ANIMAL HOUSING ─────────────────────────────────────────────────────
+  'Animal housing|ACQUISTO ANIMALI': [
+    'topi', 'mice', 'mouse', 'ratto', 'rat', 'animale', 'animal', 'jackson lab', 'charles river animal', 'acquisto animali',
+    'breeding pair', 'wild-type', 'knockout mouse', 'transgenic', 'zebrafish'
+  ],
+  'Animal housing|MATERIALI DI CONSUMO Animali (farmaci, diete)': [
+    'gabbia', 'cage', 'bedding', 'lettiera', 'mangime', 'food pellet', 'dieta animali', 'farmaci animali',
+    'mouse food', 'rodent diet', 'enrichment', 'nesting material',
+    'water bottle', 'cage card', 'ear tag', 'ear punch', 'microchip',
+    'animal bedding', 'corncob bedding', 'gavage needle', 'restrainer'
+  ],
+  'Animal housing|STABULAZIONE': [
+    'stabulazione', 'stabulario', 'animal facility', 'housing',
+    'animal room', 'ventilated cage', 'ivc', 'individually ventilated'
+  ],
+
+  // ── 8 - SERVIZI ────────────────────────────────────────────────────────────
+  'SERVIZI|Logistica': ['logistica', 'trasporto', 'spedizione', 'corriere', 'shipping', 'freight', 'courier', 'delivery'],
+  'SERVIZI|Consulenze Ricerca': ['consulenza ricerca', 'research consulting', 'cro', 'contract research', 'contract research organization'],
+  'SERVIZI|Consulenze generiche': ['consulenza', 'consulting', 'consulente', 'consultant', 'advisory'],
+  'SERVIZI|Pharma': ['pharma', 'farmaceutica', 'pharmaceutical', 'drug development', 'gmp manufacturing'],
+  'SERVIZI|Traduzioni': ['traduzione', 'translation', 'interpretariato', 'interpreter', 'localization'],
+  'SERVIZI|Supply Chain': ['supply chain', 'approvvigionamento', 'procurement', 'logistics management'],
+  'SERVIZI|Servizi di Ricerca': ['servizio ricerca', 'research service', 'outsourcing ricerca', 'contract service', 'bioanalytical service'],
 };
 
 // ═══════════════════════════════════════════════════════════════════════════════
@@ -727,6 +1032,28 @@ const productAliases = {
   'nanodrop': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
   'qubit': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
   'countess': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
+  'mettler toledo': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
+  'biotek': 'Equipments, Arredi & IT|Apparecchiatura Elettronica Ricerca: Microscopi, Fotodocumentazione (Gel Doc, Chemidoc), pHmetri, Spettrofotometri, Power Supply, Bilance, Cell Counter, FACS, Luminometro/Fluorimetro',
+  // PPE brands
+  'kimberly clark': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'touchntuff': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'tyvek': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'purple nitrile': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  'safeskin': 'Disposable|PROTEZIONE: camici, calzari, sopracalzari, guanti nitrile, guanti lattice etc',
+  // Plasticware brands
+  'transwell': 'Plasticware|Multiwell',
+  'millicell': 'Plasticware|Multiwell',
+  'amicon ultra': 'Plasticware|Filters',
+  'vivaspin': 'Plasticware|Filters',
+  'nunc': 'Plasticware|Multiwell',
+  // Disposable brands
+  'parafilm m': 'Disposable|CONSERVAZIONE CAMPIONI: contenitori PCR, cryoboxes, Parafilm, box',
+  // Reagent brands → categories
+  'peprotech': 'Lab Reagents|CITOCHINE e fattori di crescita',
+  'r&d systems': 'Lab Reagents|CITOCHINE e fattori di crescita',
+  'bio-techne': 'Lab Reagents|CITOCHINE e fattori di crescita',
+  'sakura': 'Lab Reagents|Histology',
+  'leica biosystems': 'Lab Reagents|Histology',
 };
 
 // Dizionario alias brand (nome comune -> nome nel database)
